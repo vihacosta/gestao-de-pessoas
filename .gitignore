@@ -1,0 +1,17 @@
+node_modules
+dist
+.env
+.env.local
+
+# Cópias dos documentos originais (contêm dados reais de funcionários)
+modelos/originais/
+
+# Planilhas e exemplos com dados reais da empresa
+*.xlsx
+*.xls
+docs/exemplos/
+
+# Arquivos gerados / locais
+tsconfig.tsbuildinfo
+.vercel
+.claude/settings.local.json

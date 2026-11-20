@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --color-marca-50: #fff1f3;
+  --color-marca-100: #ffe0e5;
+  --color-marca-500: #f0294f;
+  --color-marca-600: #e00d3b;
+  --color-marca-700: #bd0631;
+}
+
+html, body, #root { height: 100%; }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #111827; }
