@@ -223,8 +223,13 @@ export default function FuncionarioDetalhe() {
         {/* Férias */}
         {f.semFerias ? (
           <Cartao className="p-5 text-sm text-gray-500 lg:col-span-2">
-            <h2 className="mb-1 font-semibold text-gray-900">Férias</h2>
-            Fora do controle de férias (marcado no cadastro).
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="mb-1 font-semibold text-gray-900">Férias</h2>
+                Fora do controle de férias.
+              </div>
+              <Botao variante="secundario" onClick={() => salvar('funcionarios', { ...f, semFerias: undefined })}>Voltar ao controle de férias</Botao>
+            </div>
           </Cartao>
         ) : (
         <Cartao className="lg:col-span-2">
@@ -235,6 +240,12 @@ export default function FuncionarioDetalhe() {
             </div>
             {!f.dataDemissao && (
               <div className="flex gap-2">
+                <Botao
+                  variante="fantasma"
+                  onClick={() => confirm(`Tirar ${f.nome} do controle de férias (ex.: sócios)? Dá para voltar depois.`) && salvar('funcionarios', { ...f, semFerias: true })}
+                >
+                  Tirar do controle
+                </Botao>
                 <Botao variante="fantasma" onClick={() => setAcertoAberto(true)}>
                   <ClipboardCheck size={16} /> Acertar com a contabilidade
                 </Botao>
