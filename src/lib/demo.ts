@@ -67,4 +67,4 @@ const ausencias: Ausencia[] = [
 const config: ConfigEmpresa[] = [{ id: 'empresa', valorBonus: 100, bonusLimiteDia: 4, bonusLimiteMes: 4, diasExperiencia: 90, valorAlimentacao: 110 }]
 const modelos: ModeloEnviado[] = []
 
-export const dadosDemo = { funcionarios, ferias, ausencias, config, modelos, pontos: [], documentos: [], justificativas: [], erros: [] }
+export const dadosDemo = { funcionarios, ferias, ausencias, config, modelos, pontos: [], documentos: [], justificativas: [], erros: [], aquisicoes: [] }

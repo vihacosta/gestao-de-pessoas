@@ -62,7 +62,7 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['funcionarios', 'ferias', 'ausencias', 'config', 'modelos', 'pontos', 'documentos', 'justificativas', 'erros'] loop
+  foreach t in array array['funcionarios', 'ferias', 'ausencias', 'config', 'modelos', 'pontos', 'documentos', 'justificativas', 'erros', 'aquisicoes'] loop
     execute format('
       create table if not exists public.%I (
         id text primary key,

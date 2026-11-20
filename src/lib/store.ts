@@ -9,7 +9,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { useCallback, useEffect, useState } from 'react'
 import { dadosDemo } from './demo'
 
-export type Tabela = 'funcionarios' | 'ferias' | 'ausencias' | 'config' | 'modelos' | 'pontos' | 'documentos' | 'justificativas' | 'erros'
+export type Tabela = 'funcionarios' | 'ferias' | 'ausencias' | 'config' | 'modelos' | 'pontos' | 'documentos' | 'justificativas' | 'erros' | 'aquisicoes'
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
@@ -43,9 +43,15 @@ function gravarLocal<T>(t: Tabela, rows: T[]) {
 
 export async function listar<T extends { id: string }>(t: Tabela): Promise<T[]> {
   if (!supabase) return lerLocal<T>(t)
-  const { data, error } = await supabase.from(t).select('data')
-  if (error) throw error
-  return (data ?? []).map((r) => r.data as T)
+  // o Supabase devolve no máximo 1000 linhas por consulta: busca em páginas
+  const todas: T[] = []
+  for (let de = 0; ; de += 1000) {
+    const { data, error } = await supabase.from(t).select('data').order('id').range(de, de + 999)
+    if (error) throw error
+    todas.push(...(data ?? []).map((r) => r.data as T))
+    if (!data || data.length < 1000) break
+  }
+  return todas
 }
 
 export async function salvar<T extends { id: string }>(t: Tabela, row: T): Promise<void> {

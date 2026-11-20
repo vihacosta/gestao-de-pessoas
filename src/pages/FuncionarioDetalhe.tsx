@@ -23,6 +23,7 @@ import { DocumentosPessoais } from '../components/DocumentosPessoais'
 import { ConferenciaDados } from '../components/ConferenciaDados'
 import { HistoricoOcorrencias } from '../components/HistoricoOcorrencias'
 import { ErrosFuncionario } from '../components/ErrosFuncionario'
+import { AquisicoesFuncionario } from '../components/AquisicoesFuncionario'
 import { camposDoModelo, ctpsTexto, enderecoTexto, modelosPadrao, montarDados, nomeArquivo, preencher, zipar } from '../lib/modelos'
 import { camposFaltando, carregarModelo } from './Documentos'
 import { useConfig } from './Configuracoes'
@@ -297,6 +298,10 @@ export default function FuncionarioDetalhe() {
 
         <div className="lg:col-span-3">
           <ErrosFuncionario funcionarioId={f.id} />
+        </div>
+
+        <div className="lg:col-span-3">
+          <AquisicoesFuncionario funcionarioId={f.id} />
         </div>
       </div>
 
