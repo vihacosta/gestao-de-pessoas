@@ -1,7 +1,7 @@
 import { ClipboardCheck, FileWarning, Plus, Search, User } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Botao, Cabecalho, Cartao, Entrada, Selo, Vazio } from '../components/ui'
+import { Botao, Cabecalho, Cartao, Entrada, Selo, Vazio, Oculto } from '../components/ui'
 import { ConferirPlanilhaAtivos } from '../components/ConferirPlanilhaAtivos'
 import { brl, dataBR, salarioEm } from '../lib/clt'
 import { hojeISO } from '../lib/hoje'
@@ -102,7 +102,7 @@ export default function Funcionarios() {
                   )}
                 </div>
                 <div className="hidden text-right text-sm sm:block">
-                  <div>{brl(salarioEm(f, hoje))}</div>
+                  <div><Oculto>{brl(salarioEm(f, hoje))}</Oculto></div>
                 </div>
                 {f.dataDemissao ? <Selo cor="vermelho">Desligado</Selo> : f.tipo === 'estagio' ? <Selo cor="roxo">Estágio</Selo> : <Selo cor="azul">CLT</Selo>}
               </Link>

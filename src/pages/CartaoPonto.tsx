@@ -3,7 +3,7 @@ import { ptBR } from 'date-fns/locale'
 import { AlertTriangle, Download, FileUp, Trash2, UserPlus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Botao, Cabecalho, Cartao, Selecao, Selo, Vazio } from '../components/ui'
+import { Botao, Cabecalho, Cartao, Selecao, Selo, Vazio, Oculto } from '../components/ui'
 import { apagarArquivo, baixarArquivo, enviarArquivo, salvarNoComputador } from '../lib/arquivos'
 import { bonusDoMes, horasTexto } from '../lib/bonus'
 import { lerCartoes, somaExtras, somaFaltas, type ArquivoPontoLido, type CartaoLido } from '../lib/cartaoPonto'
@@ -216,7 +216,7 @@ export default function CartaoPontoPage() {
                           <span className="text-xs text-gray-400">—</span>
                         ) : (
                           <>
-                            {b.status === 'recebe' ? <Selo cor="verde">Recebe {brl(b.valor)}</Selo> : b.status === 'experiencia' ? <Selo cor="cinza">Em experiência</Selo> : b.status === 'fora' ? <Selo cor="cinza">Fora do período</Selo> : <Selo cor="vermelho">Não recebe</Selo>}
+                            {b.status === 'recebe' ? <Selo cor="verde">Recebe <Oculto>{brl(b.valor)}</Oculto></Selo> : b.status === 'experiencia' ? <Selo cor="cinza">Em experiência</Selo> : b.status === 'fora' ? <Selo cor="cinza">Fora do período</Selo> : <Selo cor="vermelho">Não recebe</Selo>}
                             <ul className="mt-1 space-y-0.5 text-xs text-gray-600">
                               {b.motivos.map((m) => (
                                 <li key={m}>{m}</li>

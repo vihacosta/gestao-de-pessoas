@@ -6,7 +6,7 @@ import { dataBR } from '../lib/clt'
 import { lerXlsx } from '../lib/historicoPlanilha'
 import { salvar, salvarVarios, useTabela } from '../lib/store'
 import type { Funcionario } from '../lib/types'
-import { Botao, Entrada, Modal, Selo } from './ui'
+import { Botao, Entrada, Modal, Selo, Oculto } from './ui'
 
 /**
  * Confere os ativos do sistema com a planilha "RELAÇÃO DE FUNCIONÁRIOS ATIVOS.xlsx":
@@ -129,7 +129,7 @@ export function ConferirPlanilhaAtivos() {
                             {l.nome}
                             {l.admissao ? ` · admissão ${dataBR(l.admissao)}` : ' · sem data de admissão na planilha'}
                             {l.aniversario && ` · aniversário ${diaMes(l.aniversario)}`}
-                            {sal && ` · salário ${sal.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                            {sal && <> · salário <Oculto>{sal.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</Oculto></>}
                           </span>
                           {l.admissao ? (
                             <Botao variante="fantasma" onClick={() => cadastrar([l])} disabled={importando}>

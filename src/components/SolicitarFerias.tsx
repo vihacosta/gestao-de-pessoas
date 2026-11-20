@@ -27,7 +27,7 @@ import {
 import { hojeISO } from '../lib/hoje'
 import { novoId, salvar, useTabela } from '../lib/store'
 import type { Ausencia, Ferias, Funcionario } from '../lib/types'
-import { Botao, Campo, Entrada, Modal, Selecao, Selo, cx, type CorSelo } from './ui'
+import { Botao, Campo, Entrada, Modal, Selecao, Selo, cx, type CorSelo, Oculto } from './ui'
 
 const coresStatus: Record<StatusFeriasFuncionario['codigo'], CorSelo> = {
   vencida: 'vermelho',
@@ -287,10 +287,10 @@ export function SolicitarFerias({ aberto, onFechar, funcionarioId }: { aberto: b
               <div className="flex items-center gap-1 font-semibold text-gray-700">
                 <Wallet size={13} /> Valores estimados
               </div>
-              <div className="flex justify-between"><span>{estagio ? 'Recesso' : 'Férias'}</span><span>{brl(valores.ferias)}</span></div>
-              {!estagio && <div className="flex justify-between"><span>1/3 constitucional</span><span>{brl(valores.terco)}</span></div>}
-              {abono > 0 && <div className="flex justify-between"><span>Abono + 1/3</span><span>{brl(valores.abono + valores.tercoAbono)}</span></div>}
-              <div className="flex justify-between border-t border-gray-200 pt-1 font-semibold"><span>Total bruto</span><span>{brl(valores.total)}</span></div>
+              <div className="flex justify-between"><span>{estagio ? 'Recesso' : 'Férias'}</span><span><Oculto>{brl(valores.ferias)}</Oculto></span></div>
+              {!estagio && <div className="flex justify-between"><span>1/3 constitucional</span><span><Oculto>{brl(valores.terco)}</Oculto></span></div>}
+              {abono > 0 && <div className="flex justify-between"><span>Abono + 1/3</span><span><Oculto>{brl(valores.abono + valores.tercoAbono)}</Oculto></span></div>}
+              <div className="flex justify-between border-t border-gray-200 pt-1 font-semibold"><span>Total bruto</span><span><Oculto>{brl(valores.total)}</Oculto></span></div>
               <div className="text-gray-500">Sem descontos de INSS e IR. Pagar até 2 dias antes do início.</div>
             </div>
           )}

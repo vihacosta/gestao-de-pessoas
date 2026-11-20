@@ -2,7 +2,7 @@ import { ArrowLeft, Cake, FileDown, FileText, Gift, Pencil, Plus, Trash2 } from 
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { SeloStatusFerias, SolicitarFerias } from '../components/SolicitarFerias'
-import { Botao, Cabecalho, Campo, Cartao, Entrada, Modal, Selo, Vazio } from '../components/ui'
+import { Botao, Cabecalho, Campo, Cartao, Entrada, Modal, Selo, Vazio, Oculto } from '../components/ui'
 import {
   aniversarioEmpresa,
   brl,
@@ -165,22 +165,22 @@ export default function FuncionarioDetalhe() {
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
               <dt className="text-gray-500">{estagio ? 'Bolsa atual' : 'Salário atual'}</dt>
-              <dd className="font-semibold">{brl(salarioEm(f, hoje))}</dd>
+              <dd className="font-semibold"><Oculto>{brl(salarioEm(f, hoje))}</Oculto></dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-gray-500">13º de {ano}</dt>
-              <dd>{estagio ? 'Não se aplica' : `${brl(decimo.valor)} (${decimo.avos}/12)`}</dd>
+              <dd>{estagio ? 'Não se aplica' : <><Oculto>{brl(decimo.valor)}</Oculto> ({decimo.avos}/12)</>}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-gray-500">FGTS mensal (8%)</dt>
-              <dd>{estagio ? 'Não se aplica' : brl(fgtsMensal(f, hoje))}</dd>
+              <dd>{estagio ? 'Não se aplica' : <Oculto>{brl(fgtsMensal(f, hoje))}</Oculto>}</dd>
             </div>
             {!estagio && (
               <div className="flex justify-between">
                 <dt className="text-gray-500" title="Soma dos depósitos mensais de 8% sobre o salário de cada mês, sem 13º e férias">
                   FGTS depositado (estimativa)
                 </dt>
-                <dd>{brl(fgtsAcumuladoEstimado(f, hoje))}</dd>
+                <dd><Oculto>{brl(fgtsAcumuladoEstimado(f, hoje))}</Oculto></dd>
               </div>
             )}
             <div className="flex justify-between">
@@ -282,7 +282,7 @@ export default function FuncionarioDetalhe() {
                     {dataBR(s.data)}
                     {s.motivo && <span className="text-gray-500"> · {s.motivo}</span>}
                   </span>
-                  <span className="font-medium">{brl(s.valor)}</span>
+                  <span className="font-medium"><Oculto>{brl(s.valor)}</Oculto></span>
                 </li>
               ))}
           </ul>

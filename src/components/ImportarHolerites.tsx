@@ -8,7 +8,7 @@ import { lerTextoPdf, separarPaginas } from '../lib/pdf'
 import { salvar, useTabela } from '../lib/store'
 import type { DocumentoGuardado, Funcionario } from '../lib/types'
 import { encontrarFuncionario } from '../pages/CartaoPonto'
-import { Botao, Cartao, Selecao } from './ui'
+import { Botao, Cartao, Selecao, Oculto } from './ui'
 
 const mesBR = (m: string) => `${m.slice(5)}/${m.slice(0, 4)}`
 const tituloDe = (h: HoleriteLido) => `Holerite ${h.tipo.toLowerCase() === 'mensal' ? '' : h.tipo.toLowerCase() + ' '}${mesBR(h.mes)}`
@@ -148,11 +148,11 @@ export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
                         {jaTem && <div className="mt-1 text-xs text-amber-700">Já importado neste mês: será substituído</div>}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
-                        {h.salario != null ? brl(h.salario) : '—'}
+                        {h.salario != null ? <Oculto>{brl(h.salario)}</Oculto> : '—'}
                         {salarioDifere && (
                           <div className="mt-1 flex flex-col gap-0.5 text-xs text-amber-700">
                             <span className="flex items-center gap-1">
-                              <AlertTriangle size={12} /> cadastro: {noCadastro ? brl(noCadastro) : 'sem salário'}
+                              <AlertTriangle size={12} /> cadastro: {noCadastro ? <Oculto>{brl(noCadastro)}</Oculto> : 'sem salário'}
                             </span>
                             <button className="text-left text-marca-600 underline" onClick={() => atualizarSalario(f!, h)}>
                               Atualizar cadastro
@@ -160,7 +160,7 @@ export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">{h.liquido != null ? brl(h.liquido) : '—'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{h.liquido != null ? <Oculto>{brl(h.liquido)}</Oculto> : '—'}</td>
                     </tr>
                   )
                 })}

@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Copy, Paperclip, Pencil, Plus, Trash2 } from
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CartaoBeneficio } from '../components/CartaoBeneficio'
-import { Botao, Cabecalho, Campo, Cartao, Entrada, Modal, Selecao, Selo, Vazio, cx } from '../components/ui'
+import { Botao, Cabecalho, Campo, Cartao, Entrada, Modal, Selecao, Selo, Vazio, cx, Oculto } from '../components/ui'
 import { ACEITOS } from '../components/EnviarArquivos'
 import { apagarArquivo, enviarArquivo } from '../lib/arquivos'
 import { abrirDocumento, nomeSeguro } from '../lib/documentos'
@@ -190,7 +190,7 @@ function BonusMes({ mes }: { mes: string }) {
   }
 
   const selo = (r: ResultadoBonus) =>
-    r.status === 'recebe' ? <Selo cor="verde">Recebe {brl(r.valor)}</Selo> : r.status === 'experiencia' ? <Selo cor="cinza">Em experiência</Selo> : <Selo cor="vermelho">Não recebe</Selo>
+    r.status === 'recebe' ? <Selo cor="verde">Recebe <Oculto>{brl(r.valor)}</Oculto></Selo> : r.status === 'experiencia' ? <Selo cor="cinza">Em experiência</Selo> : <Selo cor="vermelho">Não recebe</Selo>
 
   return (
     <>
@@ -213,14 +213,14 @@ function BonusMes({ mes }: { mes: string }) {
         </Cartao>
         <Cartao className="col-span-2 p-4 sm:col-span-1">
           <div className="text-sm text-gray-500">Bônus a pagar (Mobilidade)</div>
-          <div className="text-2xl font-bold">{brl(total)}</div>
+          <div className="text-2xl font-bold"><Oculto>{brl(total)}</Oculto></div>
         </Cartao>
       </div>
       <CartaoBeneficio funcionarios={funcionarios} ausencias={ausencias} pontos={pontos} config={config} mes={mes} nomeMes={nomeMes(mes)} />
       <Cartao>
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
           <span className="text-sm text-gray-500">
-            Valor {brl(config.valorBonus)} · perde com {horasTexto(config.bonusLimiteDia)} ou mais num dia, ou {config.bonusLimiteMes != null ? horasTexto(config.bonusLimiteMes) : '—'} ou mais no mês sem compensar
+            Valor <Oculto>{brl(config.valorBonus)}</Oculto> · perde com {horasTexto(config.bonusLimiteDia)} ou mais num dia, ou {config.bonusLimiteMes != null ? horasTexto(config.bonusLimiteMes) : '—'} ou mais no mês sem compensar
           </span>
           <Botao variante="secundario" className="px-3 py-1" onClick={copiar}>
             <Copy size={14} /> {copiado ? 'Copiado!' : 'Copiar lista'}

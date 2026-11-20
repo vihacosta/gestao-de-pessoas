@@ -1,5 +1,5 @@
-import { X } from 'lucide-react'
-import { useEffect, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
+import { Eye, EyeOff, X } from 'lucide-react'
+import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
@@ -107,4 +107,27 @@ export function Modal({ titulo, aberto, onFechar, children, largura = 'max-w-lg'
 
 export function Vazio({ children }: { children: ReactNode }) {
   return <div className="p-8 text-center text-sm text-gray-500">{children}</div>
+}
+
+/** Valor em dinheiro que começa escondido; o olhinho ao lado mostra ou esconde. */
+export function Oculto({ children }: { children: ReactNode }) {
+  const [visivel, setVisivel] = useState(false)
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap">
+      <span className={visivel ? undefined : 'select-none tracking-wider'}>{visivel ? children : 'R$ •••••'}</span>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setVisivel((v) => !v)
+        }}
+        className="rounded p-0.5 text-current opacity-50 hover:bg-black/5 hover:opacity-100"
+        aria-label={visivel ? 'Esconder valor' : 'Mostrar valor'}
+        title={visivel ? 'Esconder valor' : 'Mostrar valor'}
+      >
+        {visivel ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
+    </span>
+  )
 }

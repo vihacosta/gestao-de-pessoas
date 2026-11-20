@@ -4,7 +4,7 @@ import { criarParcelas, pendenteAquisicao, quitada, totalAquisicao, type Aquisic
 import { brl, dataBR } from '../lib/clt'
 import { hojeISO } from '../lib/hoje'
 import { novoId, remover, salvar, useTabela } from '../lib/store'
-import { Botao, Campo, Cartao, Entrada, Modal, Selo, Vazio } from './ui'
+import { Botao, Campo, Cartao, Entrada, Modal, Selo, Vazio, Oculto } from './ui'
 
 /** "1.250,50", "150", "40.5" → número */
 const numero = (s: string) => {
@@ -36,7 +36,7 @@ export function AquisicoesFuncionario({ funcionarioId }: { funcionarioId: string
           <p className="text-xs text-gray-500">Compras descontadas em folha. Clique numa parcela para marcar como descontada.</p>
         </div>
         <div className="flex items-center gap-2">
-          {pendente > 0 && <Selo cor="amarelo">a descontar: {brl(pendente)}</Selo>}
+          {pendente > 0 && <Selo cor="amarelo">a descontar: <Oculto>{brl(pendente)}</Oculto></Selo>}
           <Botao variante="secundario" onClick={() => setLancando(true)}>
             <Plus size={16} /> Lançar aquisição
           </Botao>
@@ -50,7 +50,7 @@ export function AquisicoesFuncionario({ funcionarioId }: { funcionarioId: string
             <span className="w-24 shrink-0 text-gray-500">{dataBR(a.data)}</span>
             <span className="min-w-40 flex-1">
               <span className="font-medium">{a.produto}</span>
-              <span className="ml-2 text-gray-500">{brl(totalAquisicao(a))}</span>
+              <span className="ml-2 text-gray-500"><Oculto>{brl(totalAquisicao(a))}</Oculto></span>
               {a.observacao && <span className="block text-xs text-gray-500">{a.observacao}</span>}
             </span>
             <span className="flex flex-wrap gap-1">
@@ -67,7 +67,7 @@ export function AquisicoesFuncionario({ funcionarioId }: { funcionarioId: string
                   }
                 >
                   {p.paga && <Check size={11} />}
-                  {i + 1}/{a.parcelas.length} · {mesBR(p.data)} · {brl(p.valor)}
+                  {i + 1}/{a.parcelas.length} · {mesBR(p.data)} · <Oculto>{brl(p.valor)}</Oculto>
                 </button>
               ))}
             </span>

@@ -5,7 +5,7 @@ import { salvarNoComputador } from '../lib/arquivos'
 import { linhasCartao, planilhaCartao, textoTabela } from '../lib/beneficios'
 import { brl } from '../lib/clt'
 import type { Ausencia, CartaoPontoSalvo, ConfigEmpresa, Funcionario } from '../lib/types'
-import { Botao, Cartao } from './ui'
+import { Botao, Cartao, Oculto } from './ui'
 
 /** Prévia e download da planilha do cartão benefício do mês */
 export function CartaoBeneficio(props: { funcionarios: Funcionario[]; ausencias: Ausencia[]; pontos: CartaoPontoSalvo[]; config: ConfigEmpresa; mes: string; nomeMes: string }) {
@@ -59,10 +59,10 @@ export function CartaoBeneficio(props: { funcionarios: Funcionario[]; ausencias:
                     <span className="ml-2 text-xs text-gray-500">{l.bonus.status === 'experiencia' ? 'em experiência' : 'perdeu o bônus'}</span>
                   )}
                 </td>
-                <td className="px-3 py-2 text-right">{brl(l.alimentacao)}</td>
-                <td className={`px-3 py-2 text-right ${l.mobilidade ? '' : 'text-gray-400'}`}>{brl(l.mobilidade)}</td>
-                <td className={`px-3 py-2 text-right ${l.cultura ? '' : 'text-gray-400'}`}>{brl(l.cultura)}</td>
-                <td className="px-3 py-2 text-right font-medium">{brl(l.alimentacao + l.mobilidade + l.cultura)}</td>
+                <td className="px-3 py-2 text-right"><Oculto>{brl(l.alimentacao)}</Oculto></td>
+                <td className={`px-3 py-2 text-right ${l.mobilidade ? '' : 'text-gray-400'}`}><Oculto>{brl(l.mobilidade)}</Oculto></td>
+                <td className={`px-3 py-2 text-right ${l.cultura ? '' : 'text-gray-400'}`}><Oculto>{brl(l.cultura)}</Oculto></td>
+                <td className="px-3 py-2 text-right font-medium"><Oculto>{brl(l.alimentacao + l.mobilidade + l.cultura)}</Oculto></td>
               </tr>
             ))}
           </tbody>
@@ -70,10 +70,10 @@ export function CartaoBeneficio(props: { funcionarios: Funcionario[]; ausencias:
             <tfoot className="border-t border-gray-200 bg-gray-50 font-semibold">
               <tr>
                 <td className="px-4 py-2">Total</td>
-                <td className="px-3 py-2 text-right">{brl(soma('alimentacao'))}</td>
-                <td className="px-3 py-2 text-right">{brl(soma('mobilidade'))}</td>
-                <td className="px-3 py-2 text-right">{brl(soma('cultura'))}</td>
-                <td className="px-3 py-2 text-right">{brl(soma('alimentacao') + soma('mobilidade') + soma('cultura'))}</td>
+                <td className="px-3 py-2 text-right"><Oculto>{brl(soma('alimentacao'))}</Oculto></td>
+                <td className="px-3 py-2 text-right"><Oculto>{brl(soma('mobilidade'))}</Oculto></td>
+                <td className="px-3 py-2 text-right"><Oculto>{brl(soma('cultura'))}</Oculto></td>
+                <td className="px-3 py-2 text-right"><Oculto>{brl(soma('alimentacao') + soma('mobilidade') + soma('cultura'))}</Oculto></td>
               </tr>
             </tfoot>
           )}

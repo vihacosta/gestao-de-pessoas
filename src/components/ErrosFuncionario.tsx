@@ -4,7 +4,7 @@ import { brl, dataBR } from '../lib/clt'
 import { aviso, explicacao, grupoDoErro, gruposDeErros, LIMITE, type ErroFuncionario, type GrupoErros } from '../lib/descontoErros'
 import { hojeISO } from '../lib/hoje'
 import { novoId, remover, salvar, salvarVarios, useTabela } from '../lib/store'
-import { Botao, Campo, Cartao, Entrada, Modal, Selo, Vazio, type CorSelo } from './ui'
+import { Botao, Campo, Cartao, Entrada, Modal, Selo, Vazio, type CorSelo, Oculto } from './ui'
 
 /** "1.250,50", "150", "40.5" → número (ponto com 1 ou 2 casas no fim conta como centavos) */
 const numero = (s: string) => {
@@ -47,7 +47,7 @@ export function ErrosFuncionario({ funcionarioId }: { funcionarioId: string }) {
         <div>
           <span className="font-semibold">Erros e quebras</span>
           <p className="text-xs text-gray-500">
-            1 erro em 3 meses não desconta. Mais de um: desconta a soma dividida pela quantidade. Acima de {brl(LIMITE)}: desconta o que passar.
+            1 erro em 3 meses não desconta. Mais de um: desconta a soma dividida pela quantidade. Acima de <Oculto>{brl(LIMITE)}</Oculto>: desconta o que passar.
           </p>
         </div>
         <Botao variante="secundario" onClick={() => setLancando(true)}>
@@ -58,7 +58,7 @@ export function ErrosFuncionario({ funcionarioId }: { funcionarioId: string }) {
       {pendentes.map((g) => (
         <div key={g.inicio} className="flex flex-wrap items-center gap-3 border-b border-red-100 bg-red-50 px-4 py-3 text-sm">
           <span className="mr-auto">
-            <strong>Descontar {brl(g.desconto)}</strong> na folha ({g.erros.length} {g.erros.length === 1 ? 'erro' : 'erros'} desde {dataBR(g.inicio)})
+            <strong>Descontar <Oculto>{brl(g.desconto)}</Oculto></strong> na folha ({g.erros.length} {g.erros.length === 1 ? 'erro' : 'erros'} desde {dataBR(g.inicio)})
           </span>
           <Botao onClick={() => setDescontando(g)}>Marcar como descontado</Botao>
         </div>
@@ -91,7 +91,7 @@ export function ErrosFuncionario({ funcionarioId }: { funcionarioId: string }) {
                 <li key={e.id} className="flex items-center gap-3">
                   <span className="w-20 shrink-0 text-gray-500">{dataBR(e.data)}</span>
                   <span className="flex-1">{e.descricao || '—'}</span>
-                  <span className="font-medium">{brl(e.valor)}</span>
+                  <span className="font-medium"><Oculto>{brl(e.valor)}</Oculto></span>
                   <button onClick={() => excluir(e)} className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600" aria-label="Excluir erro">
                     <Trash2 size={14} />
                   </button>
@@ -173,7 +173,7 @@ function MarcarDescontado({ grupo, onFechar }: { grupo: GrupoErros | null; onFec
     <Modal titulo="Marcar desconto como feito" aberto onFechar={onFechar}>
       <div className="space-y-4 p-5 text-sm">
         <p>
-          Desconto de <strong>{brl(grupo.desconto)}</strong> referente a {grupo.erros.length} {grupo.erros.length === 1 ? 'erro' : 'erros'} desde {dataBR(grupo.inicio)}.
+          Desconto de <strong><Oculto>{brl(grupo.desconto)}</Oculto></strong> referente a {grupo.erros.length} {grupo.erros.length === 1 ? 'erro' : 'erros'} desde {dataBR(grupo.inicio)}.
           Depois disso, a contagem de 3 meses recomeça no próximo erro.
         </p>
         {grupo.aConfirmar && (

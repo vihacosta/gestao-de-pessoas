@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { areas, principaisCelular } from '../components/Layout'
 import { SeloStatusFerias } from '../components/SolicitarFerias'
-import { Cabecalho, Cartao, Selo, Vazio } from '../components/ui'
+import { Cabecalho, Cartao, Selo, Vazio, Oculto } from '../components/ui'
 import { aniversarioEmpresa, brl, dataBR, decimoTerceiro, fgtsMensal, periodosAquisitivos, salarioEm, statusFerias } from '../lib/clt'
 import { hojeISO } from '../lib/hoje'
 import { ehMarcoPresente, proximosAniversariantes, textoMarco } from '../lib/aniversarios'
@@ -14,7 +14,7 @@ import { mesAnterior, nomeMes, pendenciasAssinatura } from './Holerites'
 import { useConfig } from './Configuracoes'
 import { pendenciaJustificativas } from './Justificativas'
 
-function Numero({ icone, rotulo, valor, sub }: { icone: ReactNode; rotulo: string; valor: ReactNode; sub?: string }) {
+function Numero({ icone, rotulo, valor, sub }: { icone: ReactNode; rotulo: string; valor: ReactNode; sub?: ReactNode }) {
   return (
     <Cartao className="p-4">
       <div className="flex items-center gap-2 text-sm text-gray-500">{icone}{rotulo}</div>
@@ -82,8 +82,8 @@ export default function Painel() {
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Numero icone={<Users size={16} />} rotulo="Ativos" valor={ativos.length} sub={`${ativos.filter((f) => f.tipo === 'estagio').length} estagiários`} />
         <Numero icone={<Palmtree size={16} />} rotulo="De férias hoje" valor={deFerias.length} sub={`${pendentes.length} pedidos aguardando`} />
-        <Numero icone={null} rotulo="Folha mensal" valor={brl(folha)} sub={`FGTS do mês: ${brl(fgts)}`} />
-        <Numero icone={null} rotulo={`13º de ${ano}`} valor={brl(decimo)} sub="Soma estimada (sem encargos)" />
+        <Numero icone={null} rotulo="Folha mensal" valor={<Oculto>{brl(folha)}</Oculto>} sub={<>FGTS do mês: <Oculto>{brl(fgts)}</Oculto></>} />
+        <Numero icone={null} rotulo={`13º de ${ano}`} valor={<Oculto>{brl(decimo)}</Oculto>} sub="Soma estimada (sem encargos)" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
