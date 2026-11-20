@@ -1,13 +1,23 @@
 import { Scissors } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { baixarArquivo, enviarArquivo } from '../lib/arquivos'
+import { apagarArquivo, baixarArquivo, enviarArquivo } from '../lib/arquivos'
 import { excluirDocumento, guardarDocumento } from '../lib/documentos'
-import { caminhoOriginal, mesesParaSeparar, planoSeparacao, tituloCartaoDigitalizado, type MesParaSeparar } from '../lib/pontoDigitalizado'
+import { caminhoMarcacao, caminhoOriginal, mesesParaSeparar, planoSeparacao, tituloCartaoDigitalizado, type MesParaSeparar } from '../lib/pontoDigitalizado'
 import { useTabela } from '../lib/store'
 import type { DocumentoGuardado, Funcionario } from '../lib/types'
-import { Botao, Cartao, Modal, cx } from './ui'
+import { Botao, Cartao, Modal, Selecao, cx } from './ui'
 
 const mesBR = (m: string) => `${m.slice(5)}/${m.slice(0, 4)}`
+
+/** Marcação guardada para conferir depois (lista de pessoas de cada página) */
+async function lerMarcacao(mes: string, paginas: number): Promise<string[][] | undefined> {
+  try {
+    const dados: unknown = JSON.parse(await (await baixarArquivo(caminhoMarcacao(mes))).text())
+    return Array.isArray(dados) && dados.length === paginas && dados.every((p) => Array.isArray(p)) ? (dados as string[][]) : undefined
+  } catch {
+    return undefined
+  }
+}
 
 /** Aviso com os meses de cartões digitalizados que ainda estão com todos juntos, e o botão de separar */
 export function SepararDigitalizados() {
@@ -48,17 +58,25 @@ function Separar({ mes: inicial, onFechar }: { mes: MesParaSeparar; onFechar: ()
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
 
+  const comCopia = useMemo(() => mes.copias.map((c) => c.funcionarioId), [mes])
+  // quem tem a cópia + quem recebeu alguma página pelo "outra pessoa"
   const pessoas = useMemo(
     () =>
-      mes.copias
-        .map((c) => ({ id: c.funcionarioId, nome: funcionarios.find((f) => f.id === c.funcionarioId)?.nome ?? '(sem cadastro)' }))
+      [...new Set([...comCopia, ...donos.flat()])]
+        .map((id) => ({ id, nome: funcionarios.find((f) => f.id === id)?.nome ?? '(sem cadastro)' }))
         .sort((a, b) => a.nome.localeCompare(b.nome)),
-    [mes, funcionarios],
+    [comCopia, donos, funcionarios],
   )
-  const ids = pessoas.map((p) => p.id)
+  const outras = useMemo(
+    () => funcionarios.filter((f) => !pessoas.some((p) => p.id === f.id)).sort((a, b) => a.nome.localeCompare(b.nome)),
+    [funcionarios, pessoas],
+  )
   const nome = (id: string) => pessoas.find((p) => p.id === id)?.nome.split(' ')[0] ?? ''
 
   const caminho = mes.copias[0].caminho
+  const mesId = mes.mes
+  const [temMarcacao, setTemMarcacao] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
   useEffect(() => {
     let vivo = true
     ;(async () => {
@@ -66,10 +84,12 @@ function Separar({ mes: inicial, onFechar }: { mes: MesParaSeparar; onFechar: ()
         const buf = await (await baixarArquivo(caminho)).arrayBuffer()
         const { imagensDasPaginas } = await import('../lib/pdf')
         const imgs = await imagensDasPaginas(buf)
+        const guardada = await lerMarcacao(mesId, imgs.length)
         if (!vivo) return
         setPdf(buf)
         setImagens(imgs)
-        setDonos(imgs.map(() => []))
+        setDonos(guardada ?? imgs.map(() => []))
+        setTemMarcacao(!!guardada)
       } catch (e) {
         if (vivo) setErro('Não consegui abrir o PDF: ' + String((e as Error).message ?? e))
       }
@@ -77,12 +97,23 @@ function Separar({ mes: inicial, onFechar }: { mes: MesParaSeparar; onFechar: ()
     return () => {
       vivo = false
     }
-  }, [caminho])
+  }, [caminho, mesId])
+
+  async function guardarMarcacao() {
+    setErro(null)
+    try {
+      await enviarArquivo(caminhoMarcacao(mesId), new Blob([JSON.stringify(donos)], { type: 'application/json' }))
+      setTemMarcacao(true)
+      setAviso('Marcação guardada. Dá para fechar e voltar depois.')
+    } catch (e) {
+      setErro('Não foi possível guardar a marcação: ' + String((e as Error).message ?? e))
+    }
+  }
 
   const alternar = (pagina: number, id: string) =>
     setDonos((d) => d.map((ids, i) => (i !== pagina ? ids : ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])))
 
-  const plano = planoSeparacao(ids, donos)
+  const plano = planoSeparacao(comCopia, donos)
 
   async function salvar() {
     if (!pdf) return
@@ -110,6 +141,18 @@ function Separar({ mes: inicial, onFechar }: { mes: MesParaSeparar; onFechar: ()
           substitui: copia,
         })
       }
+      // quem não tinha a cópia mas é dono de alguma página
+      for (const [funcionarioId, paginas] of plano.paginas) {
+        if (comCopia.includes(funcionarioId)) continue
+        await guardarDocumento({
+          funcionarioId,
+          categoria: 'ponto_assinado',
+          mes: mes.mes,
+          titulo: tituloCartaoDigitalizado(mes.mes),
+          arquivos: [new File([await separarPaginas(pdf, paginas)], `cartao-ponto-${mes.mes}.pdf`, { type: 'application/pdf' })],
+        })
+      }
+      await apagarArquivo(caminhoMarcacao(mes.mes)).catch(() => {})
       onFechar()
     } catch (e) {
       setErro('Não foi possível salvar: ' + String((e as Error).message ?? e))
@@ -122,6 +165,12 @@ function Separar({ mes: inicial, onFechar }: { mes: MesParaSeparar; onFechar: ()
       <div className="p-5">
         {erro && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{erro}</p>}
         {!imagens && !erro && <p className="text-sm text-gray-500">Abrindo o PDF…</p>}
+        {aviso && <p className="mb-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">{aviso}</p>}
+        {temMarcacao && !aviso && (
+          <p className="mb-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
+            As páginas já vêm marcadas pelo nome impresso em cada cartão. Confira e clique em <b>Salvar separação</b>.
+          </p>
+        )}
         {imagens && (
           <>
             <p className="mb-4 text-sm text-gray-600">
@@ -152,6 +201,20 @@ function Separar({ mes: inicial, onFechar }: { mes: MesParaSeparar; onFechar: ()
                           </button>
                         )
                       })}
+                      <Selecao
+                        aria-label={`Outra pessoa na página ${i + 1}`}
+                        className="text-xs"
+                        value=""
+                        onChange={(e) => e.target.value && alternar(i, e.target.value)}
+                        title="Para quem não está na lista (ex.: ex-funcionário com a data de saída errada no cadastro)"
+                      >
+                        <option value="">+ outra pessoa…</option>
+                        {outras.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.nome}
+                          </option>
+                        ))}
+                      </Selecao>
                     </div>
                   </div>
                 </div>
@@ -163,12 +226,17 @@ function Separar({ mes: inicial, onFechar }: { mes: MesParaSeparar; onFechar: ()
       {imagens && (
         <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-white px-5 py-3 text-sm">
           <span className="text-gray-600">
-            {pessoas.length - plano.semPagina.length} de {pessoas.length} pessoas com página
+            {comCopia.length - plano.semPagina.length} de {comCopia.length} pessoas da lista com página
             {plano.semPagina.length > 0 && <> · sem página: {plano.semPagina.map(nome).join(', ')}</>}
           </span>
-          <Botao onClick={salvar} disabled={salvando || plano.semPagina.length === pessoas.length}>
-            {salvando ? 'Salvando…' : 'Salvar separação'}
-          </Botao>
+          <div className="flex gap-2">
+            <Botao variante="secundario" onClick={guardarMarcacao} disabled={salvando} title="Guarda as marcações sem separar, para conferir depois">
+              Guardar marcação
+            </Botao>
+            <Botao onClick={salvar} disabled={salvando || plano.paginas.size === 0}>
+              {salvando ? 'Salvando…' : 'Salvar separação'}
+            </Botao>
+          </div>
         </div>
       )}
     </Modal>

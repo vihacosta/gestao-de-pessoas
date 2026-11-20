@@ -32,19 +32,25 @@ export interface PlanoSeparacao {
   paginasSemDono: number[]
 }
 
-/** `donos[i]` = pessoas da página i (uma página pode ter o cartão de mais de uma pessoa) */
-export function planoSeparacao(funcionarioIds: string[], donos: string[][]): PlanoSeparacao {
+/**
+ * `donos[i]` = pessoas da página i (uma página pode ter o cartão de mais de uma pessoa).
+ * `comCopia` = quem tem a cópia do mês inteiro na ficha. Uma página pode ir também para quem não tem
+ * (ex-funcionário com a data de saída errada no cadastro): essa pessoa ganha o cartão como documento novo.
+ */
+export function planoSeparacao(comCopia: string[], donos: string[][]): PlanoSeparacao {
   const paginas = new Map<string, number[]>()
   const paginasSemDono: number[] = []
   donos.forEach((ids, i) => {
-    const validos = ids.filter((id) => funcionarioIds.includes(id))
-    if (!validos.length) paginasSemDono.push(i)
-    for (const id of validos) paginas.set(id, [...(paginas.get(id) ?? []), i])
+    if (!ids.length) paginasSemDono.push(i)
+    for (const id of ids) paginas.set(id, [...(paginas.get(id) ?? []), i])
   })
-  return { paginas, semPagina: funcionarioIds.filter((id) => !paginas.has(id)), paginasSemDono }
+  return { paginas, semPagina: comCopia.filter((id) => !paginas.has(id)), paginasSemDono }
 }
 
 export const tituloCartaoDigitalizado = (mes: string) => `Cartão ponto ${mes.slice(5)}/${mes.slice(0, 4)} (digitalizado)`
 
 /** Onde fica guardado o PDF original do mês inteiro, para não perder nada */
 export const caminhoOriginal = (mes: string) => `ponto/${mes}/completo-digitalizado.pdf`
+
+/** Marcação feita e guardada para conferir antes de separar */
+export const caminhoMarcacao = (mes: string) => `ponto/${mes}/marcacao-digitalizado.json`

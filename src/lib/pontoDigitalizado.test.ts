@@ -31,7 +31,9 @@ describe('cartões digitalizados do mês inteiro', () => {
     const p = planoSeparacao(['a', 'b', 'c'], [['a'], ['a'], [], ['b', 'a'], ['x']])
     expect(p.paginas.get('a')).toEqual([0, 1, 3])
     expect(p.paginas.get('b')).toEqual([3])
+    // x não tinha a cópia (data de saída errada), mas o cartão é dela
+    expect(p.paginas.get('x')).toEqual([4])
     expect(p.semPagina).toEqual(['c'])
-    expect(p.paginasSemDono).toEqual([2, 4])
+    expect(p.paginasSemDono).toEqual([2])
   })
 })
