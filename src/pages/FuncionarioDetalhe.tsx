@@ -83,6 +83,19 @@ export default function FuncionarioDetalhe() {
     setGerandoKit(false)
   }
 
+  async function fichaCadastral() {
+    if (!f) return
+    const m = modelosPadrao.find((x) => x.id === 'admissao-1-ficha-cadastral')!
+    try {
+      const buf = await carregarModelo(m)
+      const faltando = camposFaltando(camposDoModelo(buf), f, hoje)
+      salvarNoComputador(preencher(buf, montarDados(m, { funcionarios: [f], dataDoc: hoje, extras: {}, config })), nomeArquivo(m, [f]))
+      if (faltando.length) alert(`Ficha gerada, mas estes dados estão em branco no cadastro: ${faltando.join(', ')}.`)
+    } catch (e) {
+      alert('Não foi possível gerar a ficha: ' + String((e as Error).message ?? e))
+    }
+  }
+
   async function excluir() {
     if (!f || !confirm(`Excluir ${f.nome} e todos os registros de férias? Isso não pode ser desfeito.`)) return
     for (const x of ferias.filter((x) => x.funcionarioId === f.id)) await remover('ferias', x.id)
@@ -102,6 +115,9 @@ export default function FuncionarioDetalhe() {
           <>
             <Botao onClick={kitAdmissao} disabled={gerandoKit} title="Baixa todos os documentos de admissão preenchidos, com a data de admissão">
               <FileDown size={16} /> Kit de admissão
+            </Botao>
+            <Botao variante="secundario" onClick={fichaCadastral} title="Baixa a ficha cadastral em Word com os dados atuais do cadastro">
+              <FileDown size={16} /> Ficha cadastral
             </Botao>
             <Link to={`/documentos?funcionario=${f.id}`}>
               <Botao variante="secundario">

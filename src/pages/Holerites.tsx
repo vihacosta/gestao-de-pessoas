@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EnviarArquivos } from '../components/EnviarArquivos'
 import { ImportarHolerites } from '../components/ImportarHolerites'
+import { SepararDigitalizados } from '../components/SepararDigitalizados'
 import { Botao, Cabecalho, Cartao, Selo, Vazio } from '../components/ui'
 import { d, iso } from '../lib/clt'
 import { abrirDocumento, excluirDocumento, guardarDocumento, nomesCategoria } from '../lib/documentos'
@@ -90,6 +91,7 @@ export default function Holerites() {
       <Cabecalho titulo="Holerites e cartões assinados" subtitulo="Guarde a foto ou o PDF de cada documento assinado, por funcionário e por mês" />
 
       <ImportarHolerites onMes={setMes} />
+      <SepararDigitalizados />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">

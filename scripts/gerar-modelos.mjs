@@ -164,6 +164,29 @@ const b = {
     )
   },
   espaco: () => par('', { depois: 120 }),
+  /** Título de seção (ficha cadastral) */
+  secao: (t) => par(run(t, { b: true, sz: 19, cor: COR, caps: true }), { jc: 'left', antes: 200, depois: 80, juntoProximo: true }),
+  /**
+   * Grade de dados com duas colunas de rótulo/valor. Cada linha: [[rótulo, valor], [rótulo, valor]]
+   * ou [[rótulo, valor]] (ocupa a largura toda).
+   */
+  grade: (linhas) => {
+    const meia = LARGURA / 2
+    const L = [1750, meia - 1750, 1750, meia - 1750]
+    const cel = (w, conteudo, { span, fundo } = {}) =>
+      `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${span ? `<w:gridSpan w:val="${span}"/>` : ''}${fundo ? `<w:shd w:val="clear" w:color="auto" w:fill="${fundo}"/>` : ''}<w:vAlign w:val="center"/></w:tcPr>${conteudo}</w:tc>`
+    const rot = (w, r) => cel(w, par(run(r, { b: true, sz: 17, cor: '5A5A5A' }), { jc: 'left', depois: 0 }), { fundo: 'F6F1EC' })
+    const val = (v) => par(runs(v, { sz: 20 }), { jc: 'left', depois: 0 })
+    const linhas_ = linhas.map((l) => {
+      const cels =
+        l.length === 1
+          ? rot(L[0], l[0][0]) + cel(L[1] + L[2] + L[3], val(l[0][1]), { span: 3 })
+          : l.map(([r, v], i) => rot(L[2 * i], r) + cel(L[2 * i + 1], val(v))).join('')
+      return `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="400"/></w:trPr>${cels}</w:tr>`
+    })
+    const borda = (lado) => `<w:${lado} w:val="single" w:sz="4" w:color="D9D9D9"/>`
+    return tabela(L, linhas_, { bordas: `<w:tblBorders>${['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(borda).join('')}</w:tblBorders>`, jc: 'left' })
+  },
 }
 
 const funcionario = (...extras) => ['{{nome}}', 'CPF: {{cpf}}', ...extras]
@@ -179,6 +202,51 @@ const preambuloColetivo = `Termo de acordo que celebram, de um lado, ${QUALIFICA
 // ---------------------------------------------------------------- documentos
 
 const DOCUMENTOS = [
+  {
+    id: 'admissao-1-ficha-cadastral',
+    titulo: 'Ficha cadastral do funcionário',
+    corpo: [
+      b.secao('Dados pessoais'),
+      b.grade([
+        [['Nome completo', '**{{nome}}**']],
+        [['Nascimento', '{{data_nascimento}}'], ['Sexo', '{{sexo}}']],
+        [['Estado civil', '{{estado_civil}}'], ['Instrução', '{{grau_instrucao}}']],
+        [['Naturalidade', '{{naturalidade}}'], ['Telefone', '{{telefone}}']],
+        [['E-mail', '{{email}}']],
+        [['Nome da mãe', '{{nome_mae}}']],
+        [['Nome do pai', '{{nome_pai}}']],
+      ]),
+      b.secao('Documentos'),
+      b.grade([
+        [['CPF', '{{cpf}}'], ['RG', '{{rg}}']],
+        [['PIS', '{{pis}}'], ['CTPS', '{{ctps}}']],
+      ]),
+      b.secao('Endereço'),
+      b.grade([
+        [['Rua e número', '{{rua}}']],
+        [['Complemento', '{{complemento}}'], ['Bairro', '{{bairro}}']],
+        [['Município', '{{municipio}}'], ['CEP', '{{cep}}']],
+      ]),
+      b.secao('Contrato'),
+      b.grade([
+        [['Cargo', '{{cargo}}'], ['Contratação', '{{tipo_contrato}}']],
+        [['Admissão', '{{data_admissao}}'], ['Remuneração', 'R$ {{salario}}']],
+        [['Jornada', '{{horario_jornada}}']],
+      ]),
+      b.secao('Família e contatos'),
+      b.grade([
+        [['Dependentes', '{{dependentes}}']],
+        [['Contato 1', '{{contato_emergencia_1}}']],
+        [['Contato 2', '{{contato_emergencia_2}}']],
+      ]),
+      b.secao('Dados bancários'),
+      b.grade([[['Pix', '{{pix}}']], [['Banco / conta', '{{dados_bancarios}}']]]),
+      par('', { depois: 120 }),
+      b.final('Declaro que as informações acima são verdadeiras e me comprometo a comunicar à empresa qualquer alteração.'),
+      b.local(),
+      b.assinaturas(funcionario()),
+    ],
+  },
   {
     id: 'admissao-2-codigo-de-cultura',
     titulo: 'Termo de recebimento do Código de Cultura',

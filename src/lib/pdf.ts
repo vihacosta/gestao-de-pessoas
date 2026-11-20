@@ -21,6 +21,25 @@ export async function lerTextoPdf(buf: ArrayBuffer): Promise<TextoPosicionado[][
   return paginas
 }
 
+/** Imagem (JPEG em data URL) de cada página, para mostrar na tela */
+export async function imagensDasPaginas(buf: ArrayBuffer, largura = 1000): Promise<string[]> {
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise
+  const imagens: string[] = []
+  for (let i = 1; i <= doc.numPages; i++) {
+    const pagina = await doc.getPage(i)
+    const viewport = pagina.getViewport({ scale: largura / pagina.getViewport({ scale: 1 }).width })
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(viewport.width)
+    canvas.height = Math.round(viewport.height)
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    await pagina.render({ canvas, canvasContext: ctx, viewport }).promise
+    imagens.push(canvas.toDataURL('image/jpeg', 0.8))
+  }
+  return imagens
+}
+
 /** Novo PDF só com as páginas indicadas (começando em 0) */
 export async function separarPaginas(buf: ArrayBuffer, paginas: number[]): Promise<Blob> {
   const origem = await PDFDocument.load(buf.slice(0))

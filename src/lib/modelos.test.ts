@@ -19,6 +19,33 @@ const maria: Funcionario = {
   salarios: [{ data: '2026-11-03', valor: 2500 }],
 }
 const joana: Funcionario = { ...maria, id: '2', nome: 'Joana Exemplo', cpf: '999.888.777-66' }
+/** Cadastro com todos os campos preenchidos (dados fictícios) */
+const completa: Funcionario = {
+  ...maria,
+  rg: '12.345.678-9',
+  pis: '123.45678.90-1',
+  dataNascimento: '1995-04-10',
+  sexo: 'Feminino',
+  estadoCivil: 'Solteiro(a)',
+  grauInstrucao: 'Médio completo',
+  naturalidade: 'Maringá/PR',
+  nomeMae: 'Mãe Teste',
+  nomePai: 'Pai Teste',
+  telefone: '(44) 90000-0000',
+  email: 'teste@exemplo.com',
+  endereco: 'Rua das Flores',
+  numero: '100',
+  complemento: 'Casa 2',
+  bairro: 'Centro',
+  municipio: 'Maringá',
+  cep: '87000-000',
+  horarioJornada: '08:00 às 18:00',
+  dependentes: 'Filho Teste (filho)',
+  contatoEmergencia1: 'Contato Um (44) 91111-1111',
+  contatoEmergencia2: 'Contato Dois (44) 92222-2222',
+  pix: 'teste@exemplo.com',
+  dadosBancarios: 'Banco 001, ag. 1234, c/c 5678-9',
+}
 
 const texto = (b: ArrayBuffer) =>
   new Docxtemplater(new PizZip(b), { delimiters: { start: '{{', end: '}}' }, paragraphLoop: true }).getFullText()
@@ -48,7 +75,7 @@ describe('modelos padrão', () => {
     for (const m of modelosPadrao) {
       const buf = ler(m.id)
       const dados = montarDados(m, {
-        funcionarios: [maria, joana],
+        funcionarios: [completa, joana],
         dataDoc: '2026-11-19',
         extras: Object.fromEntries(m.extras.map((c) => [c.chave, c.tipo === 'valor' ? '150,50' : c.tipo === 'mes' ? '2026-11' : c.tipo.startsWith('data') ? '2026-12-01' : 'x'])),
         config: { id: 'empresa', valorBonus: 100, bonusLimiteDia: 4, diasExperiencia: 90, socioNome: 'Sócio', socioCpf: '000' },
@@ -70,6 +97,27 @@ describe('modelos padrão', () => {
     expect(t).toContain('CTPS nº 1234567 / 0001 PR')
     expect(t).toContain('Maringá, 19 de novembro de 2026')
     expect(t).toContain('CPF: 111.222.333-44')
+  })
+
+  it('ficha cadastral sai com os dados do cadastro', async () => {
+    const m = modelosPadrao.find((x) => x.id === 'admissao-1-ficha-cadastral')!
+    const blob = preencher(ler(m.id), montarDados(m, { funcionarios: [completa], dataDoc: '2026-11-19', extras: {} }))
+    const t = texto(await blob.arrayBuffer())
+    expect(t).toContain('Maria Teste')
+    expect(t).toContain('111.222.333-44')
+    expect(t).toContain('Rua das Flores, 100')
+    expect(t).toContain('87000-000')
+    expect(t).toContain('CLT')
+    expect(t).toContain('R$ 2.500,00')
+    expect(t).not.toMatch(/\{\{/)
+  })
+
+  it('ficha cadastral com campos vazios não quebra', async () => {
+    const m = modelosPadrao.find((x) => x.id === 'admissao-1-ficha-cadastral')!
+    const blob = preencher(ler(m.id), montarDados(m, { funcionarios: [{ ...maria, tipo: 'estagio' }], dataDoc: '2026-11-19', extras: {} }))
+    const t = texto(await blob.arrayBuffer())
+    expect(t).toContain('Estágio')
+    expect(t).not.toMatch(/\{\{/)
   })
 
   it('documento coletivo repete a linha da tabela para cada funcionário', async () => {
