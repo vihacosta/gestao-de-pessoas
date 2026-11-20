@@ -20,9 +20,17 @@ export const nomesCategoria: Record<CategoriaDocumento, string> = {
   pessoal: 'Documentos pessoais',
 }
 
-const LADO_MAXIMO = 2000 // px: suficiente para ler e economiza espaço
+/** px no lado maior: dá para ler um documento e a foto fica com uns 200–300 KB */
+export const LADO_MAXIMO = 1600
+export const QUALIDADE_JPEG = 0.72
+/** PDFs maiores que isto são verificados: se forem digitalizados (só imagem), são regravados mais leves */
+export const PDF_GRANDE = 1024 * 1024
 
 /** Converte qualquer imagem que o navegador consiga abrir em JPEG, reduzindo fotos muito grandes. */
+export async function comprimirImagem(arquivo: Blob): Promise<Blob> {
+  return new Blob([(await imagemParaJpeg(arquivo)).bytes], { type: 'image/jpeg' })
+}
+
 async function imagemParaJpeg(arquivo: Blob): Promise<{ bytes: ArrayBuffer; largura: number; altura: number }> {
   const url = URL.createObjectURL(arquivo)
   try {
@@ -39,16 +47,23 @@ async function imagemParaJpeg(arquivo: Blob): Promise<{ bytes: ArrayBuffer; larg
     canvas.width = largura
     canvas.height = altura
     canvas.getContext('2d')!.drawImage(img, 0, 0, largura, altura)
-    const blob = await new Promise<Blob>((ok) => canvas.toBlob((b) => ok(b!), 'image/jpeg', 0.85))
+    const blob = await new Promise<Blob>((ok) => canvas.toBlob((b) => ok(b!), 'image/jpeg', QUALIDADE_JPEG))
     return { bytes: await blob.arrayBuffer(), largura, altura }
   } finally {
     URL.revokeObjectURL(url)
   }
 }
 
-/** Junta fotos e PDFs, na ordem, num único PDF. Um PDF sozinho é mantido como está. */
+/** PDF digitalizado grande → versão mais leve; PDF com texto (holerite, contrato gerado) fica como está */
+export async function pdfMaisLeve(pdf: Blob): Promise<Blob> {
+  if (pdf.size <= PDF_GRANDE) return pdf
+  const { comprimirPdfDigitalizado } = await import('./pdf')
+  return (await comprimirPdfDigitalizado(await pdf.arrayBuffer(), LADO_MAXIMO, QUALIDADE_JPEG).catch(() => undefined)) ?? pdf
+}
+
+/** Junta fotos e PDFs, na ordem, num único PDF. Um PDF sozinho é mantido como está (só fica mais leve se for digitalizado). */
 export async function juntarEmPdf(arquivos: File[]): Promise<Blob> {
-  if (arquivos.length === 1 && arquivos[0].type === 'application/pdf') return arquivos[0]
+  if (arquivos.length === 1 && (arquivos[0].type === 'application/pdf' || /.pdf$/i.test(arquivos[0].name))) return pdfMaisLeve(arquivos[0])
   const pdf = await PDFDocument.create()
   for (const a of arquivos) {
     if (a.type === 'application/pdf' || /\.pdf$/i.test(a.name)) {
@@ -66,7 +81,7 @@ export async function juntarEmPdf(arquivos: File[]): Promise<Blob> {
       pdf.addPage([pw, ph]).drawImage(img, { x: (pw - w) / 2, y: (ph - h) / 2, width: w, height: h })
     }
   }
-  return new Blob([(await pdf.save()) as Uint8Array<ArrayBuffer>], { type: 'application/pdf' })
+  return pdfMaisLeve(new Blob([(await pdf.save()) as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }))
 }
 
 /** Fotos que o navegador consegue converter e PDFs: estes viram um PDF só */
