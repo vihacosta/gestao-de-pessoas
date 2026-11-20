@@ -1,6 +1,6 @@
 /**
  * Modelos de documentos (.docx com campos {{...}}) e geração dos documentos preenchidos.
- * Os modelos padrão ficam em public/modelos (gerados por modelos/preparar-modelos.ps1).
+ * Os modelos padrão ficam em public/modelos (gerados por scripts/gerar-modelos.mjs).
  */
 import Docxtemplater from 'docxtemplater'
 import PizZip from 'pizzip'

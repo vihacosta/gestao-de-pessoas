@@ -38,7 +38,7 @@ npm test
 
 ## Modelos de documentos
 
-Os modelos padrão ficam em `public/modelos/`. Foram gerados a partir dos documentos da empresa por `modelos/preparar-modelos.ps1` (usa o Word instalado). As cópias dos originais ficam em `modelos/originais/`, que não vai para o Git porque contém dados reais. Novos modelos podem ser enviados pela própria tela de Documentos.
+Os modelos padrão ficam em `public/modelos/` e são gerados, todos no mesmo visual (cabeçalho com o logo `modelos/logo.jpg`), por `node scripts/gerar-modelos.mjs`. O texto de cada documento fica nesse script: para mudar um documento, edite-o e rode o comando de novo. As cópias dos originais ficam em `modelos/originais/`, que não vai para o Git porque contém dados reais. Novos modelos podem ser enviados pela própria tela de Documentos.
 
 ## Estrutura
 

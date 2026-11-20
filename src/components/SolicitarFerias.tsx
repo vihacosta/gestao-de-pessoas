@@ -114,6 +114,12 @@ export function SolicitarFerias({ aberto, onFechar, funcionarioId }: { aberto: b
   const [fim, setFim] = useState<string>()
   const [abono, setAbono] = useState(0)
   const [aprovar, setAprovar] = useState(true)
+  // Lançamento livre: para acertar férias antigas sem as travas de saldo e regras (fica lembrado)
+  const [livre, setLivreState] = useState(() => localStorage.getItem('gp:feriasLivre') !== '0')
+  const setLivre = (v: boolean) => {
+    localStorage.setItem('gp:feriasLivre', v ? '1' : '0')
+    setLivreState(v)
+  }
   const [observacao, setObservacao] = useState('')
   const [mes, setMes] = useState(startOfMonth(addMonths(new Date(), 1)))
   const [salvando, setSalvando] = useState(false)
@@ -131,16 +137,22 @@ export function SolicitarFerias({ aberto, onFechar, funcionarioId }: { aberto: b
   const f = funcionarios.find((x) => x.id === fid)
   const periodos = useMemo(() => (f ? periodosAquisitivos(f, ferias, ausencias, hoje) : []), [f, ferias, ausencias, hoje])
   const comSaldo = periodos.filter((p) => p.direitoTotal - p.usados > 0)
+  const opcoes = livre ? periodos : comSaldo
 
   // período padrão: o mais antigo com saldo
   useEffect(() => {
-    if (comSaldo.length && !comSaldo.some((p) => p.inicio === periodoInicio)) setPeriodoInicio(comSaldo[0].inicio)
-  }, [comSaldo, periodoInicio])
+    if (opcoes.length && !opcoes.some((p) => p.inicio === periodoInicio)) setPeriodoInicio((comSaldo[0] ?? opcoes[0]).inicio)
+  }, [opcoes, comSaldo, periodoInicio])
 
   const p = periodos.find((x) => x.inicio === periodoInicio)
   const dias = inicio && fim ? differenceInCalendarDays(d(fim), d(inicio)) + 1 : inicio ? 1 : 0
   const saldoDisponivel = p ? p.direitoTotal - p.usados : 0
-  const validacao = f && p && inicio ? validarSolicitacao({ funcionario: f, periodo: p, inicio, dias, abono, hoje }) : null
+  const regras = f && p && inicio ? validarSolicitacao({ funcionario: f, periodo: p, inicio, dias, abono, hoje }) : null
+  // no lançamento livre os erros viram só avisos (exceto não ter escolhido as datas)
+  const validacao =
+    regras && livre
+      ? { erros: regras.erros.filter((e) => e.startsWith('Selecione')), avisos: [...regras.erros.filter((e) => !e.startsWith('Selecione')), ...regras.avisos] }
+      : regras
   const valores = f ? valoresFerias(salarioEm(f, inicio ?? hoje), dias, abono, f.tipo) : null
   const estagio = f?.tipo === 'estagio'
 
@@ -211,13 +223,27 @@ export function SolicitarFerias({ aberto, onFechar, funcionarioId }: { aberto: b
             )}
           </div>
 
-          {f && comSaldo.length === 0 && <p className="text-sm text-gray-500">Este colaborador não tem saldo de férias.</p>}
+          {f && (
+            <label className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <input type="checkbox" className="mt-0.5" checked={livre} onChange={(e) => setLivre(e.target.checked)} />
+              <span>
+                <b>Lançamento livre</b> — para registrar férias antigas e acertar o histórico. Mostra todos os períodos e não bloqueia por saldo ou
+                regras (elas aparecem só como aviso).
+              </span>
+            </label>
+          )}
 
-          {f && comSaldo.length > 0 && (
+          {f && opcoes.length === 0 && (
+            <p className="text-sm text-gray-500">
+              {periodos.length ? 'Este colaborador não tem saldo de férias. Marque "Lançamento livre" para registrar mesmo assim.' : 'A data de admissão ainda não chegou.'}
+            </p>
+          )}
+
+          {f && opcoes.length > 0 && (
             <>
               <Campo rotulo="Período aquisitivo">
                 <Selecao value={periodoInicio} onChange={(e) => setPeriodoInicio(e.target.value)}>
-                  {comSaldo.map((x) => (
+                  {opcoes.map((x) => (
                     <option key={x.inicio} value={x.inicio}>
                       {dataBR(x.inicio)} a {dataBR(x.fim)} · saldo {x.direitoTotal - x.usados} dias{!x.completo ? ' (antecipadas)' : ''}
                     </option>

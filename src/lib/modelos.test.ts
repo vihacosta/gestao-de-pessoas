@@ -72,15 +72,15 @@ describe('modelos padrão', () => {
     expect(t).toContain('CPF: 111.222.333-44')
   })
 
-  it('documento coletivo repete a linha para cada funcionário', async () => {
+  it('documento coletivo repete a linha da tabela para cada funcionário', async () => {
     const m = modelosPadrao.find((x) => x.id === 'coletivo-ferias-coletivas')!
     const blob = preencher(
       ler(m.id),
       montarDados(m, { funcionarios: [maria, joana], dataDoc: '2026-11-19', extras: { inicio: '2026-12-23', fim: '2027-01-04', retorno: '2027-01-05' } }),
     )
     const t = texto(await blob.arrayBuffer())
-    expect(t).toContain('Maria Teste - 111.222.333-44')
-    expect(t).toContain('Joana Exemplo - 999.888.777-66')
+    expect(t).toContain('Maria Teste111.222.333-44')
+    expect(t).toContain('Joana Exemplo999.888.777-66')
     expect(t).toContain('23 de dezembro de 2026 a 04 de janeiro de 2027')
   })
 
