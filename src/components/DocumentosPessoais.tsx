@@ -80,7 +80,7 @@ export function DocumentosPessoais({ f }: { f: Funcionario }) {
                     <span key={d.id} className="inline-flex items-center gap-0.5 rounded-md border border-gray-200 bg-gray-50 pl-2 text-xs">
                       {item.varios ? d.titulo.replace(/^.*\((\d+)\)$/, 'Arquivo $1') : 'Arquivo'}
                       <span className="ml-1 text-gray-400">{tamanhoTexto(d.tamanho)}</span>
-                      <Botao variante="fantasma" className="px-1.5 py-1" title="Ver" onClick={() => abrirDocumento(d.caminho)}>
+                      <Botao variante="fantasma" className="px-1.5 py-1" title="Ver" onClick={() => abrirDocumento(d.caminho, d.nomeArquivo)}>
                         <Eye size={14} />
                       </Botao>
                       <Botao variante="fantasma" className="px-1.5 py-1" aria-label="Excluir" onClick={() => confirm(`Excluir "${d.titulo}"?`) && excluirDocumento(d)}>

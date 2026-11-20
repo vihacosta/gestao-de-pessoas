@@ -177,6 +177,8 @@ export interface DocumentoGuardado {
   caminho: string
   tamanho: number
   enviadoEm: string
+  /** Nome original, quando o arquivo foi guardado como veio (planilha, Word...) */
+  nomeArquivo?: string
   /** Dados lidos do holerite da contabilidade (categoria holerite_original) */
   holerite?: Omit<import('./holerite').HoleriteLido, 'paginas' | 'nome' | 'cpf'>
   /** Qual documento pessoal é (categoria pessoal) */

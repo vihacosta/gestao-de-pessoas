@@ -162,7 +162,7 @@ export default function Justificativas() {
                     enviada em {dataBR(x.enviadoEm)} · {tamanhoTexto(x.tamanho)}
                   </span>
                 </span>
-                <Botao variante="fantasma" className="px-1.5 py-1" onClick={() => abrirDocumento(x.caminho)} title="Ver">
+                <Botao variante="fantasma" className="px-1.5 py-1" onClick={() => abrirDocumento(x.caminho, x.nomeArquivo)} title="Ver">
                   <Eye size={15} />
                 </Botao>
                 <Botao variante="fantasma" className="px-1.5 py-1" aria-label="Excluir" onClick={() => confirm(`Excluir "${x.titulo}"?`) && excluirDocumento(x)}>

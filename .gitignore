@@ -2,6 +2,7 @@ node_modules
 dist
 .env
 .env.local
+.env.*.local
 
 # Cópias dos documentos originais (contêm dados reais de funcionários)
 modelos/originais/

@@ -3,6 +3,9 @@ import {
   acharFuncionario,
   aniversarioNascimento,
   conferirAtivos,
+  funcionarioDaPlanilha,
+  nomeProprio,
+  salariosDaFolha,
   ehMarcoPresente,
   lerDataBR,
   linhasDosAtivos,
@@ -131,5 +134,32 @@ describe('planilha RELAÇÃO DE FUNCIONÁRIOS ATIVOS', () => {
     expect(lerDataBR('9/3/1999')).toBe('1999-03-09')
     expect(lerDataBR('31/02/1990')).toBeUndefined()
     expect(lerDataBR('09/10/')).toBeUndefined()
+  })
+})
+
+describe('cadastro a partir da planilha de ativos', () => {
+  it('pega o último salário bruto de cada pessoa na FOLHA DE PAGAMENTO', () => {
+    const m = salariosDaFolha([
+      {
+        aba: 'FOLHA DE PAGAMENTO',
+        linhas: [
+          [],
+          ['', 'DATA PAGAMENTO DA FOLHA', 'DATA DE ADMISSÃO', 'PERÍODO DE EXPERIÊNCIA', 'SALÁRIO BRUTO', 'FUNCIONÁRIO'],
+          ['', 45387, 42999, 'NÃO', 2772, 'FULANA DE TAL'],
+          ['', 45600, 42999, 'NÃO', 2900, 'FULANA DE TAL'],
+          ['', 45500, 42999, 'NÃO', 2800, 'FULANA DE TAL'],
+          ['', 45387, 45307, 'NÃO', 'R$ 1.932,50', 'CICLANA SOUZA'],
+        ],
+      },
+    ])
+    expect(m.get('FULANA DE TAL')?.valor).toBe(2900)
+    expect(m.get('CICLANA SOUZA')?.valor).toBe(1932.5)
+  })
+
+  it('monta o cadastro com nome, admissão e salário; sem admissão não cadastra', () => {
+    expect(nomeProprio('MARIA DA SILVA E SOUZA')).toBe('Maria da Silva e Souza')
+    const f = funcionarioDaPlanilha({ linha: 3, nome: 'MARIA DA SILVA', situacao: 'ATIVO', admissao: '2021-01-12' }, { valor: 2000 })
+    expect(f).toMatchObject({ nome: 'Maria da Silva', dataAdmissao: '2021-01-12', tipo: 'clt', cpf: '', salarios: [{ data: '2021-01-12', valor: 2000 }] })
+    expect(funcionarioDaPlanilha({ linha: 4, nome: 'SEM DATA', situacao: 'ATIVO' })).toBeUndefined()
   })
 })

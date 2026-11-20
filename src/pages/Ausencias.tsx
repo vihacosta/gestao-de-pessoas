@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CartaoBeneficio } from '../components/CartaoBeneficio'
 import { Botao, Cabecalho, Campo, Cartao, Entrada, Modal, Selecao, Selo, Vazio, cx } from '../components/ui'
-import { apagarArquivo, baixarArquivo, enviarArquivo } from '../lib/arquivos'
+import { ACEITOS } from '../components/EnviarArquivos'
+import { apagarArquivo, enviarArquivo } from '../lib/arquivos'
+import { abrirDocumento, nomeSeguro } from '../lib/documentos'
 import { bonusDoMes, horasTexto, JORNADA_DIA, type ResultadoBonus } from '../lib/bonus'
 import { brl, d, dataBR } from '../lib/clt'
 import { lerValor } from '../lib/extenso'
@@ -114,9 +116,7 @@ function Ocorrencias({ mes, onEditar }: { mes: string; onEditar: (a: Ausencia) =
     .sort((a, b) => b.inicio.localeCompare(a.inicio))
 
   async function abrirAnexo(a: Ausencia) {
-    if (!a.anexo) return
-    const blob = await baixarArquivo(a.anexo)
-    window.open(URL.createObjectURL(blob), '_blank')
+    if (a.anexo) await abrirDocumento(a.anexo)
   }
 
   async function excluir(a: Ausencia) {
@@ -297,12 +297,19 @@ function FormOcorrencia({ aberto, atual, onFechar }: { aberto: boolean; atual: A
       horasCompensadas: lerValor(compensadas) || undefined,
       observacao: a.observacao || undefined,
     }
-    if (arquivo) {
-      const caminho = `ausencias/${reg.id}-${arquivo.name}`
-      await enviarArquivo(caminho, arquivo)
-      reg.anexo = caminho
+    try {
+      if (arquivo) {
+        const caminho = `ausencias/${reg.id}-${nomeSeguro(arquivo.name)}`
+        await enviarArquivo(caminho, arquivo)
+        if (a.anexo && a.anexo !== caminho) await apagarArquivo(a.anexo).catch(() => {})
+        reg.anexo = caminho
+      }
+      await salvar('ausencias', reg)
+    } catch (e) {
+      setSalvando(false)
+      alert('Não foi possível salvar: ' + String((e as Error).message ?? e))
+      return
     }
-    await salvar('ausencias', reg)
     setSalvando(false)
     onFechar()
   }
@@ -376,8 +383,8 @@ function FormOcorrencia({ aberto, atual, onFechar }: { aberto: boolean; atual: A
         <Campo rotulo="Observação">
           <Entrada value={a.observacao ?? ''} onChange={(e) => setA({ ...a, observacao: e.target.value })} />
         </Campo>
-        <Campo rotulo="Anexo (atestado, comprovante)" dica={a.anexo && !arquivo ? 'Já tem um anexo. Envie outro para substituir.' : 'Foto ou PDF.'}>
-          <input type="file" accept="image/*,application/pdf" onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} className="block w-full text-sm" />
+        <Campo rotulo="Anexo (atestado, comprovante)" dica={a.anexo && !arquivo ? 'Já tem um anexo. Envie outro para substituir.' : 'Foto, PDF ou outro documento.'}>
+          <input type="file" accept={ACEITOS} onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} className="block w-full text-sm" />
         </Campo>
         <p className="text-xs text-gray-500">Dia inteiro conta como {horasTexto(JORNADA_DIA)} (44h semanais).</p>
         <div className="flex justify-end gap-2">

@@ -59,7 +59,7 @@ export interface LinhaAtivos {
   admissao?: string
 }
 
-const semAcento = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim()
+export const semAcento = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim()
 
 /** Linhas da aba "FUNCIONARIOS ATIVOS" (cabeçalho com FUNCIONÁRIO, SITUAÇÃO, ANIVERSÁRIO e DATA ADMISSÃO) */
 export function linhasDosAtivos(abas: { aba: string; linhas: (string | number)[][] }[]): LinhaAtivos[] {
@@ -138,6 +138,55 @@ export function conferirAtivos(funcionarios: Funcionario[], linhas: LinhaAtivos[
     if (c.semNascimento || c.nascimentoDiferente || c.admissaoDiferente) itens.push(c)
   }
   return { itens, foraDoSistema: ativosPlanilha.filter((l) => !achados.has(l)) }
+}
+
+/** Último salário bruto de cada pessoa na aba "FOLHA DE PAGAMENTO" (nome sem acento → valor e data do pagamento) */
+export function salariosDaFolha(abas: { aba: string; linhas: (string | number)[][] }[]) {
+  const out = new Map<string, { valor: number; data: string }>()
+  const aba = abas.find((a) => semAcento(a.aba) === 'FOLHA DE PAGAMENTO')
+  if (!aba) return out
+  const iCab = aba.linhas.findIndex((l) => l?.some((c) => semAcento(String(c ?? '')) === 'FUNCIONARIO'))
+  if (iCab < 0) return out
+  const cab = aba.linhas[iCab].map((c) => semAcento(String(c ?? '')))
+  const [cNome, cData, cSal] = [cab.indexOf('FUNCIONARIO'), cab.indexOf('DATA PAGAMENTO DA FOLHA'), cab.indexOf('SALARIO BRUTO')]
+  if (cNome < 0 || cSal < 0) return out
+  for (const l of aba.linhas.slice(iCab + 1)) {
+    const nome = semAcento(String(l?.[cNome] ?? ''))
+    const v = l?.[cSal]
+    const valor = typeof v === 'number' ? v : Number(String(v ?? '').replace(/[^\d,]/g, '').replace(',', '.'))
+    if (!nome || !(valor > 0)) continue
+    const data = (cData >= 0 ? dataDaCelula(l[cData]) : undefined) ?? ''
+    const atual = out.get(nome)
+    if (!atual || data >= atual.data) out.set(nome, { valor, data })
+  }
+  return out
+}
+
+const MINUSCULAS = new Set(['DA', 'DE', 'DO', 'DAS', 'DOS', 'E'])
+/** "MARIA DA SILVA" → "Maria da Silva" */
+export const nomeProprio = (nome: string) =>
+  nome
+    .trim()
+    .split(/\s+/)
+    .map((p, i) => (i > 0 && MINUSCULAS.has(p.toUpperCase()) ? p.toLowerCase() : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()))
+    .join(' ')
+
+/**
+ * Cadastro novo a partir de uma linha da planilha de ativos (precisa da data de admissão).
+ * CPF, cargo e o ano de nascimento não estão na planilha: ficam para completar no cadastro.
+ */
+export function funcionarioDaPlanilha(l: LinhaAtivos, salario?: { valor: number }): Funcionario | undefined {
+  if (!l.admissao) return undefined
+  return {
+    id: crypto.randomUUID(),
+    nome: nomeProprio(l.nome),
+    cpf: '',
+    cargo: '',
+    tipo: 'clt',
+    dataAdmissao: l.admissao,
+    salarios: salario ? [{ data: l.admissao, valor: salario.valor, motivo: 'Importado da planilha (último salário da folha)' }] : [],
+    observacoes: 'Cadastrado pela planilha de ativos: completar CPF, cargo e data de nascimento.',
+  }
 }
 
 /** "09/10" */

@@ -47,7 +47,7 @@ function Celula({ f, mes, categoria, doc }: { f: Funcionario; mes: string; categ
       {doc ? (
         <>
           <Selo cor="verde">Guardado</Selo>
-          <Botao variante="fantasma" className="px-1.5 py-1" onClick={() => abrirDocumento(doc.caminho)} title="Ver">
+          <Botao variante="fantasma" className="px-1.5 py-1" onClick={() => abrirDocumento(doc.caminho, doc.nomeArquivo)} title="Ver">
             <Eye size={15} />
           </Botao>
           <EnviarArquivos onArquivos={enviar} titulo="Substituir por outro arquivo">
@@ -134,7 +134,7 @@ export default function Holerites() {
                     {documentos
                       .filter((x) => x.funcionarioId === f.id && x.categoria === 'holerite_original' && x.mes === mes)
                       .map((x) => (
-                        <button key={x.id} className="mt-0.5 flex items-center gap-1 text-xs text-gray-500 hover:underline" onClick={() => abrirDocumento(x.caminho)}>
+                        <button key={x.id} className="mt-0.5 flex items-center gap-1 text-xs text-gray-500 hover:underline" onClick={() => abrirDocumento(x.caminho, x.nomeArquivo)}>
                           <FileText size={12} /> {x.titulo.toLowerCase()} da contabilidade (sem assinatura)
                         </button>
                       ))}
@@ -165,7 +165,7 @@ export default function Holerites() {
               {documentos
                 .filter((x) => x.funcionarioId === f.id && x.categoria === 'holerite_original' && x.mes === mes)
                 .map((x) => (
-                  <button key={x.id} className="flex items-center gap-1 text-xs text-gray-500 underline" onClick={() => abrirDocumento(x.caminho)}>
+                  <button key={x.id} className="flex items-center gap-1 text-xs text-gray-500 underline" onClick={() => abrirDocumento(x.caminho, x.nomeArquivo)}>
                     <FileText size={12} /> {x.titulo} da contabilidade
                   </button>
                 ))}
