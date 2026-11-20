@@ -44,7 +44,7 @@ describe('planoColetivo', () => {
   it('menos de 12 meses: proporcionais, resto como licença remunerada e novo período', () => {
     // admitida em 2026-08-01, coletivas a partir de 2026-12-21: 5 avos -> 12 dias
     const f = func({ dataAdmissao: '2026-08-01' })
-    const p = planoColetivo(f, [], [], '2026-12-21', 20, HOJE)
+    const p = planoColetivo(f, [], [], '2026-12-21', 20, HOJE, true)
     expect(p.reiniciaPeriodo).toBe(true)
     expect(p.diasDescontados).toBe(12)
     expect(p.licencaRemunerada).toBe(8)
@@ -60,10 +60,18 @@ describe('planoColetivo', () => {
   })
 })
 
+describe('menos de 12 meses sem o art. 140 (como faz a contabilidade)', () => {
+  it('desconta tudo como antecipado do período em andamento', () => {
+    const p = planoColetivo(func({ dataAdmissao: '2026-08-01' }), [], [], '2026-12-21', 20, HOJE)
+    expect(p.reiniciaPeriodo).toBe(false)
+    expect(p.partes).toEqual([{ periodoInicio: '2026-08-01', inicio: '2026-12-21', fim: '2027-01-09', dias: 20, antecipada: true, licencaRemunerada: 0 }])
+  })
+})
+
 describe('reinício do período aquisitivo (art. 140)', () => {
   it('encerra o período nas coletivas e começa outro no primeiro dia', () => {
     const f = func({ dataAdmissao: '2026-08-01' })
-    const plano = planoColetivo(f, [], [], '2026-12-21', 20, HOJE)
+    const plano = planoColetivo(f, [], [], '2026-12-21', 20, HOJE, true)
     const regs = registrosColetiva(plano, { coletivaId: 'c1', aprovada: true, hoje: HOJE, novoId: id })
     const ps = periodosAquisitivos(f, regs, [], '2027-02-01')
     expect(ps.map((p) => [p.inicio, p.fim])).toEqual([
@@ -87,5 +95,21 @@ describe('validarColetiva', () => {
 
   it('avisa quando faltam menos de 15 dias', () => {
     expect(validarColetiva({ inicio: '2026-11-30', dias: 15, ferias: [], hoje: HOJE }).avisos.join()).toMatch(/15 dias/)
+  })
+})
+
+describe('acerto com a contabilidade', () => {
+  it('começa no período informado, com o saldo do relatório, e desconta as férias novas', () => {
+    const f = func({ dataAdmissao: '2017-03-27', acertoFerias: { periodoInicio: '2024-12-21', saldo: 17, em: '2026-11-18' } })
+    const ps = periodosAquisitivos(f, [], [], HOJE)
+    expect(ps.map((p) => p.inicio)).toEqual(['2024-12-21', '2025-12-21'])
+    expect(ps[0]).toMatchObject({ completo: true, saldo: 17 })
+    const plano = planoColetivo(f, [], [], '2026-12-16', 19, HOJE)
+    expect(plano.partes.map((p) => [p.periodoInicio, p.dias, p.antecipada])).toEqual([
+      ['2024-12-21', 17, false],
+      ['2025-12-21', 2, true],
+    ])
+    const regs = registrosColetiva(plano, { coletivaId: 'c', aprovada: true, hoje: HOJE, novoId: id })
+    expect(periodosAquisitivos(f, regs, [], HOJE)[0].saldo).toBe(0)
   })
 })

@@ -1,5 +1,5 @@
-import { ArrowLeft, Cake, FileDown, FileText, Gift, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, Cake, ClipboardCheck, FileDown, FileText, Gift, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { SeloStatusFerias, SolicitarFerias } from '../components/SolicitarFerias'
 import { Botao, Cabecalho, Campo, Cartao, Entrada, Modal, Selo, Vazio, Oculto } from '../components/ui'
@@ -46,6 +46,7 @@ export default function FuncionarioDetalhe() {
   const { rows: ausencias } = useTabela<Ausencia>('ausencias')
   const [reajusteAberto, setReajusteAberto] = useState(false)
   const [feriasAberto, setFeriasAberto] = useState(false)
+  const [acertoAberto, setAcertoAberto] = useState(false)
   const [gerandoKit, setGerandoKit] = useState(false)
   const config = useConfig()
   const hoje = hojeISO()
@@ -227,9 +228,14 @@ export default function FuncionarioDetalhe() {
               <SeloStatusFerias status={status} />
             </div>
             {!f.dataDemissao && (
-              <Botao variante="secundario" onClick={() => setFeriasAberto(true)}>
-                <Plus size={16} /> Solicitar
-              </Botao>
+              <div className="flex gap-2">
+                <Botao variante="fantasma" onClick={() => setAcertoAberto(true)}>
+                  <ClipboardCheck size={16} /> Acertar com a contabilidade
+                </Botao>
+                <Botao variante="secundario" onClick={() => setFeriasAberto(true)}>
+                  <Plus size={16} /> Solicitar
+                </Botao>
+              </div>
             )}
           </div>
           <div className="overflow-x-auto">
@@ -263,6 +269,12 @@ export default function FuncionarioDetalhe() {
               </tbody>
             </table>
           </div>
+          {f.acertoFerias && (
+            <p className="border-t border-gray-100 px-5 py-2 text-xs text-gray-500">
+              Acertado com a contabilidade em {dataBR(f.acertoFerias.em)}: períodos antes de {dataBR(f.acertoFerias.periodoInicio)} já quitados;
+              saldo de {f.acertoFerias.saldo} dias no período que começa nessa data.
+            </p>
+          )}
         </Cartao>
 
         {/* Salários */}
@@ -307,6 +319,7 @@ export default function FuncionarioDetalhe() {
 
       <NovoReajuste aberto={reajusteAberto} onFechar={() => setReajusteAberto(false)} funcionario={f} />
       <SolicitarFerias aberto={feriasAberto} onFechar={() => setFeriasAberto(false)} funcionarioId={f.id} />
+      <AcertoFeriasModal aberto={acertoAberto} onFechar={() => setAcertoAberto(false)} funcionario={f} />
     </>
   )
 }
@@ -341,6 +354,61 @@ function NovoReajuste({ aberto, onFechar, funcionario: f }: { aberto: boolean; o
             Cancelar
           </Botao>
           <Botao onClick={enviar}>Salvar</Botao>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function AcertoFeriasModal({ aberto, onFechar, funcionario: f }: { aberto: boolean; onFechar: () => void; funcionario: Funcionario }) {
+  const [periodoInicio, setPeriodoInicio] = useState('')
+  const [saldo, setSaldo] = useState('30')
+  const [em, setEm] = useState(hojeISO())
+  const [salvando, setSalvando] = useState(false)
+
+  useEffect(() => {
+    if (!aberto) return
+    setPeriodoInicio(f.acertoFerias?.periodoInicio ?? '')
+    setSaldo(String(f.acertoFerias?.saldo ?? 30))
+    setEm(f.acertoFerias?.em ?? hojeISO())
+  }, [aberto, f.acertoFerias])
+
+  const n = Number(saldo)
+  const valido = !!periodoInicio && periodoInicio >= f.dataAdmissao && Number.isFinite(n) && n >= 0 && n <= 30 && !!em
+
+  async function gravar(acerto: Funcionario['acertoFerias']) {
+    setSalvando(true)
+    await salvar('funcionarios', { ...f, acertoFerias: acerto })
+    setSalvando(false)
+    onFechar()
+  }
+
+  return (
+    <Modal titulo="Acertar férias com a contabilidade" aberto={aberto} onFechar={onFechar}>
+      <div className="space-y-4 p-5 text-sm">
+        <p className="text-gray-600">
+          Use a previsão de férias da contabilidade: informe o período aquisitivo mais antigo que ainda aparece no relatório e o saldo
+          (coluna "Direito"). Os períodos anteriores ficam como já quitados. Se só aparece o período "a vencer", informe o início dele e 30 dias.
+        </p>
+        <Campo rotulo="Início do período aquisitivo" dica={`Admissão em ${dataBR(f.dataAdmissao)}.`}>
+          <Entrada type="date" value={periodoInicio} min={f.dataAdmissao} onChange={(e) => setPeriodoInicio(e.target.value)} />
+        </Campo>
+        <Campo rotulo="Saldo de dias nesse período">
+          <Entrada type="number" min={0} max={30} value={saldo} onChange={(e) => setSaldo(e.target.value)} className="max-w-32" />
+        </Campo>
+        <Campo rotulo="Data do relatório" dica="Férias lançadas nesse período com início a partir desta data continuam descontando do saldo.">
+          <Entrada type="date" value={em} onChange={(e) => setEm(e.target.value)} />
+        </Campo>
+        <div className="flex flex-wrap justify-between gap-2">
+          {f.acertoFerias ? (
+            <Botao variante="perigo" onClick={() => gravar(undefined)} disabled={salvando}>Remover acerto</Botao>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2">
+            <Botao variante="secundario" onClick={onFechar}>Cancelar</Botao>
+            <Botao onClick={() => gravar({ periodoInicio, saldo: n, em })} disabled={!valido || salvando}>Salvar acerto</Botao>
+          </div>
         </div>
       </div>
     </Modal>

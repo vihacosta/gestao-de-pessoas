@@ -38,6 +38,7 @@ export function FeriasColetivas({ aberto, onFechar }: { aberto: boolean; onFecha
   const [dias, setDias] = useState(0)
   const [fora, setFora] = useState<Set<string>>(new Set())
   const [aprovar, setAprovar] = useState(true)
+  const [art140, setArt140] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [feito, setFeito] = useState<{ funcionarios: Funcionario[]; inicio: string; fim: string } | null>(null)
   const [erroDoc, setErroDoc] = useState<string | null>(null)
@@ -54,8 +55,8 @@ export function FeriasColetivas({ aberto, onFechar }: { aberto: boolean; onFecha
   const fim = inicio && dias > 0 ? fimColetiva(inicio, dias) : ''
   const ativos = useMemo(() => funcionarios.filter((f) => !f.dataDemissao).sort((a, b) => a.nome.localeCompare(b.nome)), [funcionarios])
   const planos = useMemo(
-    () => (inicio && dias > 0 ? ativos.map((f) => planoColetivo(f, ferias, ausencias, inicio, dias, hoje)) : []),
-    [ativos, ferias, ausencias, inicio, dias, hoje],
+    () => (inicio && dias > 0 ? ativos.map((f) => planoColetivo(f, ferias, ausencias, inicio, dias, hoje, art140)) : []),
+    [ativos, ferias, ausencias, inicio, dias, hoje, art140],
   )
   const incluidos = planos.filter((p) => !p.conflito && !fora.has(p.funcionario.id))
   const validacao = inicio && dias > 0 ? validarColetiva({ inicio, dias, ferias, hoje }) : null
@@ -144,10 +145,18 @@ export function FeriasColetivas({ aberto, onFechar }: { aberto: boolean; onFecha
           <Info size={16} className="shrink-0" />
           <div>
             Até 2 períodos por ano, cada um com pelo menos 10 dias. Avise o Ministério do Trabalho e o sindicato com 15 dias de antecedência e
-            afixe o aviso na empresa. Quem tem menos de 12 meses de casa tira férias proporcionais, os dias a mais são licença remunerada e um
-            novo período aquisitivo começa no primeiro dia das coletivas (CLT arts. 139 e 140).
+            afixe o aviso na empresa (CLT art. 139). Quem tem menos de 12 meses de casa tem os dias descontados como antecipados, como faz a
+            contabilidade.
           </div>
         </div>
+
+        <label className="flex items-start gap-2 text-sm text-gray-700">
+          <input type="checkbox" className="mt-0.5" checked={art140} onChange={(e) => setArt140(e.target.checked)} />
+          <span>
+            Aplicar o art. 140 da CLT a quem tem menos de 12 meses: férias proporcionais, dias a mais como licença remunerada e novo período
+            aquisitivo a partir do primeiro dia das coletivas.
+          </span>
+        </label>
 
         {planos.length > 0 && (
           <div className="rounded-xl border border-gray-200">

@@ -101,10 +101,14 @@ export function periodosAquisitivos(
     (a) => a.funcionarioId === f.id && a.tipo === 'falta_injustificada' && a.horas == null,
   )
 
-  // Férias coletivas com menos de 12 meses (CLT art. 140) encerram o período e começam outro
-  const reinicios = [...new Set(minhasFerias.filter((x) => x.reiniciaPeriodo && x.inicio > f.dataAdmissao).map((x) => x.inicio))].sort()
+  // Acerto com a contabilidade: começa no período informado, com o saldo daquela data
+  const acerto = f.acertoFerias && f.acertoFerias.periodoInicio >= f.dataAdmissao ? f.acertoFerias : undefined
+  const comeco = acerto?.periodoInicio ?? f.dataAdmissao
 
-  let inicio = d(f.dataAdmissao)
+  // Férias coletivas com menos de 12 meses (CLT art. 140) encerram o período e começam outro
+  const reinicios = [...new Set(minhasFerias.filter((x) => x.reiniciaPeriodo && x.inicio > comeco).map((x) => x.inicio))].sort()
+
+  let inicio = d(comeco)
   while (!isAfter(inicio, d(limite))) {
     const proximoReinicio = reinicios.find((r) => r > iso(inicio))
     const fimNormal = addDays(addYears(inicio, 1), -1)
@@ -126,8 +130,10 @@ export function periodosAquisitivos(
       ? direitoTotal
       : Math.floor((direitoCheio / 12) * avos(iso(inicio), iso(ateQuando)))
 
-    const doPeriodo = minhasFerias.filter((x) => x.periodoInicio === iso(inicio))
-    const usados = doPeriodo.reduce((s, x) => s + x.dias + x.abono, 0)
+    const ehAcerto = acerto != null && iso(inicio) === acerto.periodoInicio
+    const doPeriodo = minhasFerias.filter((x) => x.periodoInicio === iso(inicio) && (!ehAcerto || x.inicio >= acerto.em))
+    const usadosAntes = ehAcerto ? Math.max(0, direitoTotal - acerto.saldo) : 0
+    const usados = usadosAntes + doPeriodo.reduce((s, x) => s + x.dias + x.abono, 0)
     const saldo = direito - usados
     const saldoTotal = direitoTotal - usados
 

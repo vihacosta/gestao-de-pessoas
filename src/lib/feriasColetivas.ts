@@ -2,8 +2,10 @@
  * Férias coletivas (CLT arts. 139 a 141).
  * - Até 2 períodos por ano, nenhum com menos de 10 dias.
  * - Comunicar o órgão local do Ministério do Trabalho e o sindicato com 15 dias de antecedência.
- * - Quem tem menos de 12 meses de casa goza férias proporcionais e começa um novo período
- *   aquisitivo no primeiro dia das coletivas (art. 140). Dias além do saldo viram licença remunerada.
+ * - Quem tem menos de 12 meses de casa: a CLT (art. 140) manda dar férias proporcionais e começar um
+ *   novo período aquisitivo no primeiro dia das coletivas. A contabilidade da empresa, porém, desconta
+ *   esses dias como antecipados do período em andamento; por isso o art. 140 é opcional (`reiniciar`).
+ *   Dias além do saldo viram licença remunerada.
  */
 import { addDays, addYears, differenceInCalendarDays, getDay, isAfter } from 'date-fns'
 import { avos, d, dataBR, diasDeDireito, iso, periodosAquisitivos } from './clt'
@@ -39,6 +41,8 @@ export function planoColetivo(
   inicio: string,
   dias: number,
   hoje: string,
+  /** Aplicar o art. 140 a quem tem menos de 12 meses (por padrão segue a contabilidade: desconta como antecipadas) */
+  reiniciar = false,
 ): PlanoColetivo {
   const fim = fimColetiva(inicio, dias)
   const vazio = { funcionario: f, partes: [], diasDescontados: 0, licencaRemunerada: 0, reiniciaPeriodo: false }
@@ -48,7 +52,7 @@ export function planoColetivo(
   if (choque) return { ...vazio, conflito: `Já tem férias de ${dataBR(choque.inicio)} a ${dataBR(choque.fim)}.` }
 
   const periodos = periodosAquisitivos(f, ferias, ausencias, hoje)
-  const menosDe12 = f.tipo === 'clt' && isAfter(addYears(d(f.dataAdmissao), 1), d(inicio))
+  const menosDe12 = reiniciar && f.tipo === 'clt' && isAfter(addYears(d(f.dataAdmissao), 1), d(inicio))
 
   if (menosDe12) {
     const p = periodos[periodos.length - 1]

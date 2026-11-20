@@ -52,6 +52,19 @@ export interface Funcionario {
   docsNaoAplica?: TipoDocPessoal[]
   /** Última conferência anual dos dados do cadastro (yyyy-mm-dd) */
   dadosConferidosEm?: string
+  /** Acerto das férias com a contabilidade (ver AcertoFerias) */
+  acertoFerias?: AcertoFerias
+}
+
+/**
+ * Acerto com o relatório da contabilidade: os períodos aquisitivos passam a contar a partir de
+ * `periodoInicio` (os anteriores já estão quitados) e esse período tinha `saldo` dias na data `em`.
+ * Férias lançadas nesse período com início a partir de `em` continuam descontando.
+ */
+export interface AcertoFerias {
+  periodoInicio: string
+  saldo: number
+  em: string
 }
 
 export type StatusFerias = 'solicitada' | 'aprovada' | 'recusada'
