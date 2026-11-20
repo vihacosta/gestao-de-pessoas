@@ -1,6 +1,7 @@
-import { Check, Plus, Search, Trash2, User, X } from 'lucide-react'
+import { Check, Plus, Search, Trash2, User, Users, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { FeriasColetivas } from '../components/FeriasColetivas'
 import { SeloStatusFerias, SolicitarFerias } from '../components/SolicitarFerias'
 import { Botao, Cabecalho, Cartao, Entrada, Selecao, Selo, Vazio, cx } from '../components/ui'
 import { dataBR, periodosAquisitivos, statusFerias } from '../lib/clt'
@@ -15,6 +16,7 @@ export default function FeriasPage() {
   const [aba, setAba] = useState<'vencer' | 'solicitacoes'>('vencer')
   const [busca, setBusca] = useState('')
   const [modal, setModal] = useState<{ aberto: boolean; fid?: string }>({ aberto: false })
+  const [coletivas, setColetivas] = useState(false)
 
   return (
     <>
@@ -22,9 +24,14 @@ export default function FeriasPage() {
         titulo="Gestão de férias"
         subtitulo="Regras da CLT aplicadas automaticamente"
         acoes={
-          <Botao onClick={() => setModal({ aberto: true })}>
-            <Plus size={16} /> Solicitar férias
-          </Botao>
+          <>
+            <Botao variante="secundario" onClick={() => setColetivas(true)}>
+              <Users size={16} /> Férias coletivas
+            </Botao>
+            <Botao onClick={() => setModal({ aberto: true })}>
+              <Plus size={16} /> Solicitar férias
+            </Botao>
+          </>
         }
       />
       <div className="mb-4 flex gap-6 border-b border-gray-200 text-sm">
@@ -51,6 +58,7 @@ export default function FeriasPage() {
       {aba === 'vencer' ? <AVencer busca={busca} onSolicitar={(fid) => setModal({ aberto: true, fid })} /> : <Solicitacoes busca={busca} />}
 
       <SolicitarFerias aberto={modal.aberto} funcionarioId={modal.fid} onFechar={() => setModal({ aberto: false })} />
+      <FeriasColetivas aberto={coletivas} onFechar={() => setColetivas(false)} />
     </>
   )
 }
@@ -173,9 +181,11 @@ function Solicitacoes({ busca }: { busca: string }) {
                   <div className="text-sm text-gray-500">
                     {dataBR(x.inicio)} a {dataBR(x.fim)} · {x.dias} dias
                     {x.abono > 0 && ` + ${x.abono} vendidos`}
+                    {x.licencaRemunerada ? ` + ${x.licencaRemunerada} de licença remunerada` : ''}
                     {x.antecipada && ' · antecipadas'}
+                    {x.coletivaId && ' · coletivas'}
                   </div>
-                  {x.observacao && <div className="text-xs text-gray-500">{x.observacao}</div>}
+                  {x.observacao && !x.coletivaId && <div className="text-xs text-gray-500">{x.observacao}</div>}
                 </div>
                 {emCurso ? <Selo cor="azul">De férias agora</Selo> : <Selo cor={cor}>{rot}</Selo>}
                 <div className="flex gap-1">

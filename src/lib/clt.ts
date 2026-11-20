@@ -101,10 +101,17 @@ export function periodosAquisitivos(
     (a) => a.funcionarioId === f.id && a.tipo === 'falta_injustificada' && a.horas == null,
   )
 
+  // Férias coletivas com menos de 12 meses (CLT art. 140) encerram o período e começam outro
+  const reinicios = [...new Set(minhasFerias.filter((x) => x.reiniciaPeriodo && x.inicio > f.dataAdmissao).map((x) => x.inicio))].sort()
+
   let inicio = d(f.dataAdmissao)
   while (!isAfter(inicio, d(limite))) {
-    const fim = addDays(addYears(inicio, 1), -1)
-    const concessivoFim = addDays(addYears(inicio, 2), -1)
+    const proximoReinicio = reinicios.find((r) => r > iso(inicio))
+    const fimNormal = addDays(addYears(inicio, 1), -1)
+    // período encerrado antes de 12 meses pelas férias coletivas: direito proporcional
+    const encurtado = proximoReinicio != null && !isAfter(d(proximoReinicio), fimNormal)
+    const fim = encurtado ? addDays(d(proximoReinicio!), -1) : fimNormal
+    const concessivoFim = encurtado ? addYears(fim, 1) : addDays(addYears(inicio, 2), -1)
     const completo = isBefore(fim, d(limite))
     const ateQuando = completo ? fim : d(limite)
 
@@ -112,10 +119,12 @@ export function periodosAquisitivos(
       f.tipo === 'clt'
         ? faltas.reduce((s, a) => s + diasSobrepostos(d(a.inicio), d(a.fim), inicio, ateQuando), 0)
         : 0
-    const direitoTotal = diasDeDireito(f.tipo, nFaltas)
-    const direito = completo
+    const direitoCheio = diasDeDireito(f.tipo, nFaltas)
+    const direitoTotal = encurtado ? Math.floor((direitoCheio / 12) * avos(iso(inicio), iso(fim))) : direitoCheio
+    // período encerrado pelas coletivas: o direito proporcional já é conhecido
+    const direito = completo || encurtado
       ? direitoTotal
-      : Math.floor((direitoTotal / 12) * avos(iso(inicio), iso(ateQuando)))
+      : Math.floor((direitoCheio / 12) * avos(iso(inicio), iso(ateQuando)))
 
     const doPeriodo = minhasFerias.filter((x) => x.periodoInicio === iso(inicio))
     const usados = doPeriodo.reduce((s, x) => s + x.dias + x.abono, 0)
@@ -135,7 +144,7 @@ export function periodosAquisitivos(
       limiteInicio: iso(addDays(concessivoFim, -Math.max(saldoTotal, 0) + 1)),
       ferias: doPeriodo,
     })
-    inicio = addYears(inicio, 1)
+    inicio = addDays(fim, 1)
   }
   return lista
 }

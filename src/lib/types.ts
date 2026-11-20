@@ -71,6 +71,15 @@ export interface Ferias {
   status: StatusFerias
   observacao?: string
   criadoEm: string
+  /** Férias coletivas: mesmo id para todos os registros lançados juntos */
+  coletivaId?: string
+  /** Dias das férias coletivas além do saldo, pagos como licença remunerada (não descontam) */
+  licencaRemunerada?: number
+  /**
+   * Menos de 12 meses de casa nas férias coletivas (CLT art. 140): um novo período
+   * aquisitivo começa no primeiro dia destas férias.
+   */
+  reiniciaPeriodo?: boolean
 }
 
 export type TipoAusencia =
