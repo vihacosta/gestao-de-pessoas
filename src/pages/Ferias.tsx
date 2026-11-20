@@ -78,7 +78,7 @@ function AVencer({ busca, onSolicitar }: { busca: string; onSolicitar: (fid: str
   const linhas = useMemo(
     () =>
       funcionarios
-        .filter((f) => !f.dataDemissao && filtrar(f, busca))
+        .filter((f) => !f.dataDemissao && !f.semFerias && filtrar(f, busca))
         .map((f) => {
           const ps = periodosAquisitivos(f, ferias, ausencias, hoje)
           return { f, status: statusFerias(ps, hoje), atual: ps[ps.length - 1] }

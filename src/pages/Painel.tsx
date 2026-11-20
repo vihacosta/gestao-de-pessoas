@@ -40,7 +40,7 @@ export default function Painel() {
   const ativos = todos.filter((f) => !f.dataDemissao)
   const aConferir = ativos.filter((f) => precisaConferir(f, hoje)).sort((a, b) => a.nome.localeCompare(b.nome))
 
-  const comStatus = ativos.map((f) => ({ f, status: statusFerias(periodosAquisitivos(f, ferias, ausencias, hoje), hoje) }))
+  const comStatus = ativos.filter((f) => !f.semFerias).map((f) => ({ f, status: statusFerias(periodosAquisitivos(f, ferias, ausencias, hoje), hoje) }))
   const alertasFerias = comStatus
     .filter((x) => x.status.codigo === 'vencida' || x.status.codigo === 'vence_em_breve')
     .sort((a, b) => (a.status.diasParaLimite ?? 0) - (b.status.diasParaLimite ?? 0))

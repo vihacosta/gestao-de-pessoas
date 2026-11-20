@@ -178,6 +178,10 @@ export default function FuncionarioForm() {
               <input type="checkbox" checked={!!f.semCartaoBeneficio} onChange={(e) => set('semCartaoBeneficio', e.target.checked || undefined)} />
               Não entra na planilha do cartão benefício (ex.: sócias)
             </label>
+            <label className="flex items-center gap-2 self-end pb-2 text-sm sm:col-span-2">
+              <input type="checkbox" checked={!!f.semFerias} onChange={(e) => set('semFerias', e.target.checked || undefined)} />
+              Não entra no controle de férias (ex.: sócios)
+            </label>
           </Secao>
 
           <Secao titulo="Família, contatos e banco">

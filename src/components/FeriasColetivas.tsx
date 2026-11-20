@@ -53,7 +53,7 @@ export function FeriasColetivas({ aberto, onFechar }: { aberto: boolean; onFecha
   }, [aberto])
 
   const fim = inicio && dias > 0 ? fimColetiva(inicio, dias) : ''
-  const ativos = useMemo(() => funcionarios.filter((f) => !f.dataDemissao).sort((a, b) => a.nome.localeCompare(b.nome)), [funcionarios])
+  const ativos = useMemo(() => funcionarios.filter((f) => !f.dataDemissao && !f.semFerias).sort((a, b) => a.nome.localeCompare(b.nome)), [funcionarios])
   const planos = useMemo(
     () => (inicio && dias > 0 ? ativos.map((f) => planoColetivo(f, ferias, ausencias, inicio, dias, hoje, art140)) : []),
     [ativos, ferias, ausencias, inicio, dias, hoje, art140],

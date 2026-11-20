@@ -221,6 +221,12 @@ export default function FuncionarioDetalhe() {
         </Cartao>
 
         {/* Férias */}
+        {f.semFerias ? (
+          <Cartao className="p-5 text-sm text-gray-500 lg:col-span-2">
+            <h2 className="mb-1 font-semibold text-gray-900">Férias</h2>
+            Fora do controle de férias (marcado no cadastro).
+          </Cartao>
+        ) : (
         <Cartao className="lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 p-5">
             <div className="flex items-center gap-3">
@@ -276,6 +282,7 @@ export default function FuncionarioDetalhe() {
             </p>
           )}
         </Cartao>
+        )}
 
         {/* Salários */}
         <Cartao className="p-5">

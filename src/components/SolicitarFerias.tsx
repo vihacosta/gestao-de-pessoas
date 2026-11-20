@@ -212,7 +212,7 @@ export function SolicitarFerias({ aberto, onFechar, funcionarioId }: { aberto: b
               <Selecao value={fid} onChange={(e) => setFid(e.target.value)} className="flex-1">
                 <option value="">Escolha o colaborador…</option>
                 {funcionarios
-                  .filter((x) => !x.dataDemissao)
+                  .filter((x) => !x.dataDemissao && !x.semFerias)
                   .sort((a, b) => a.nome.localeCompare(b.nome))
                   .map((x) => (
                     <option key={x.id} value={x.id}>

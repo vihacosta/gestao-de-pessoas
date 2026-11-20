@@ -47,6 +47,8 @@ export interface Funcionario {
   beneficioCultura?: number
   /** Não entra na planilha do cartão benefício (ex.: sócias) */
   semCartaoBeneficio?: boolean
+  /** Não entra no controle de férias (ex.: sócios) */
+  semFerias?: boolean
   observacoes?: string
   /** Documentos pessoais marcados como "não se aplica" (ex.: não tem filhos, não usa VT) */
   docsNaoAplica?: TipoDocPessoal[]
