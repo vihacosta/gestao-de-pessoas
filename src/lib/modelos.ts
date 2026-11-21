@@ -50,6 +50,34 @@ export const modelosPadrao: Modelo[] = [
   ]),
   padrao('admissao-8-monitoramento-cameras', 'Ciência de monitoramento por câmeras', 'admissao'),
   padrao('admissao-9-bonus-assiduidade', 'Termo do bônus por assiduidade', 'admissao'),
+  padrao('demissao-1-aviso-previo-trabalhado', 'Aviso prévio trabalhado', 'demissao', [
+    { chave: 'dias_aviso', rotulo: 'Dias de aviso', tipo: 'texto' },
+    { chave: 'dias_trabalhados', rotulo: 'Dias trabalhados', tipo: 'texto' },
+    { chave: 'ultimo_dia', rotulo: 'Último dia', tipo: 'data' },
+    { chave: 'prazo_pagamento', rotulo: 'Prazo de pagamento', tipo: 'data' },
+    { chave: 'texto_proporcional', rotulo: 'Dias proporcionais', tipo: 'texto' },
+  ]),
+  padrao('demissao-2-aviso-previo-indenizado', 'Aviso prévio indenizado', 'demissao', [
+    { chave: 'dias_aviso', rotulo: 'Dias de aviso', tipo: 'texto' },
+    { chave: 'projecao', rotulo: 'Projeção do contrato', tipo: 'data' },
+    { chave: 'prazo_pagamento', rotulo: 'Prazo de pagamento', tipo: 'data' },
+  ]),
+  padrao('demissao-3-pedido-de-demissao', 'Pedido de demissão', 'demissao', [{ chave: 'texto_aviso', rotulo: 'Aviso prévio', tipo: 'texto' }]),
+  padrao('demissao-4-acordo-484a', 'Termo de rescisão por acordo', 'demissao', [
+    { chave: 'ultimo_dia', rotulo: 'Último dia', tipo: 'data' },
+    { chave: 'dias_aviso', rotulo: 'Dias de aviso', tipo: 'texto' },
+    { chave: 'dias_indenizados', rotulo: 'Dias indenizados', tipo: 'texto' },
+    { chave: 'prazo_pagamento', rotulo: 'Prazo de pagamento', tipo: 'data' },
+  ]),
+  padrao('demissao-5-termino-experiencia', 'Término do contrato de experiência', 'demissao', [
+    { chave: 'ultimo_dia', rotulo: 'Último dia', tipo: 'data' },
+    { chave: 'prazo_pagamento', rotulo: 'Prazo de pagamento', tipo: 'data' },
+  ]),
+  padrao('demissao-6-rescisao-estagio', 'Termo de rescisão de estágio', 'demissao', [
+    { chave: 'ultimo_dia', rotulo: 'Último dia', tipo: 'data' },
+    { chave: 'instituicao', rotulo: 'Instituição de ensino', tipo: 'texto' },
+  ]),
+  padrao('demissao-7-devolucao-materiais', 'Termo de devolução de materiais', 'demissao'),
   padrao('aquisicao-de-mercadorias', 'Aquisição de mercadorias', 'avulso', [
     { chave: 'data_aquisicao', rotulo: 'Data da aquisição', tipo: 'data' },
     { chave: 'itens', rotulo: 'Itens', tipo: 'texto' },
@@ -79,6 +107,7 @@ export const modelosPadrao: Modelo[] = [
 
 export const nomesGrupo: Record<GrupoModelo, string> = {
   admissao: 'Admissão',
+  demissao: 'Demissão',
   avulso: 'Individuais',
   coletivo: 'Coletivos (vários funcionários)',
 }

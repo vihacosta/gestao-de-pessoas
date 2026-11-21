@@ -1,4 +1,4 @@
-import { ArrowLeft, Cake, ClipboardCheck, FileDown, FileText, Gift, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Cake, ClipboardCheck, FileDown, FileText, Gift, Pencil, Plus, Trash2, UserMinus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { SeloStatusFerias, SolicitarFerias } from '../components/SolicitarFerias'
@@ -25,6 +25,7 @@ import { ConferenciaDados } from '../components/ConferenciaDados'
 import { HistoricoOcorrencias } from '../components/HistoricoOcorrencias'
 import { ErrosFuncionario } from '../components/ErrosFuncionario'
 import { AquisicoesFuncionario } from '../components/AquisicoesFuncionario'
+import { DesligamentoFuncionario } from '../components/DesligamentoFuncionario'
 import { camposDoModelo, ctpsTexto, enderecoTexto, modelosPadrao, montarDados, nomeArquivo, preencher, zipar } from '../lib/modelos'
 import { camposFaltando, carregarModelo } from './Documentos'
 import { useConfig } from './Configuracoes'
@@ -49,6 +50,7 @@ export default function FuncionarioDetalhe() {
   const [feriasAberto, setFeriasAberto] = useState(false)
   const [acertoAberto, setAcertoAberto] = useState(false)
   const [gerandoKit, setGerandoKit] = useState(false)
+  const [desligamentoAberto, setDesligamentoAberto] = useState(false)
   const config = useConfig()
   const hoje = hojeISO()
 
@@ -120,6 +122,9 @@ export default function FuncionarioDetalhe() {
             <Botao variante="secundario" onClick={fichaCadastral} title="Baixa a ficha cadastral em Word com os dados atuais do cadastro">
               <FileDown size={16} /> Ficha cadastral
             </Botao>
+            <Botao variante="secundario" onClick={() => setDesligamentoAberto(true)} title="Gera aviso prévio, pedido de demissão e os outros documentos do desligamento">
+              <UserMinus size={16} /> Desligamento
+            </Botao>
             <Link to={`/documentos?funcionario=${f.id}`}>
               <Botao variante="secundario">
                 <FileText size={16} /> Outro documento
@@ -136,6 +141,8 @@ export default function FuncionarioDetalhe() {
           </>
         }
       />
+
+      {desligamentoAberto && <DesligamentoFuncionario f={f} config={config} aberto onFechar={() => setDesligamentoAberto(false)} />}
 
       <ConferenciaDados f={f} />
 

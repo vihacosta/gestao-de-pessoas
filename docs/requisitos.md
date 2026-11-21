@@ -22,6 +22,10 @@ Status: requisitos definidos; falta decidir onde o sistema vai rodar
 - Os modelos usam campos como {{nome}}, {{cpf}}, {{cargo}}, {{salario}}, {{data_admissao}}
 - Ao admitir alguém, o sistema **gera todos os documentos já preenchidos**, prontos para imprimir e assinar
 - O mesmo vale para a demissão (aviso, termo de rescisão etc.)
+  - **Feito (botão Desligamento na ficha):** escolhe o motivo e baixa o documento com os prazos calculados, junto com o termo de devolução de materiais: aviso trabalhado ou indenizado, pedido de demissão, acordo (art. 484-A), término de experiência e rescisão de estágio. Regras em `src/lib/demissao.ts`.
+  - **Estimativa da rescisão** (na mesma janela, com valores escondidos até abrir): saldo de salário, aviso indenizado, 13º, férias com 1/3, descontos pendentes (limitados a um salário, art. 477 § 5º), depósito e multa do FGTS e custo para a empresa. Não considera INSS, IRRF, médias nem convenção coletiva. Regras em `src/lib/rescisao.ts`.
+  - Não gera o TRCT (o valor oficial é o da contabilidade), não tem modelo de justa causa e não grava a data de desligamento sozinho.
+  - **A conferir:** os textos foram redigidos sem um original da empresa e precisam da revisão da contabilidade ou de um advogado antes do primeiro uso. No aviso trabalhado, o sistema considera 30 dias de trabalho e indeniza os dias proporcionais.
 - Formatos atuais dos modelos: Word, PDF e papel. Plano:
   - **Word**: marcamos os campos ({{nome}} etc.) e o sistema preenche direto
   - **PDF e papel**: na configuração inicial, a usuária manda o arquivo ou uma foto e Claude recria cada um em Word já com os campos marcados (trabalho feito uma única vez)

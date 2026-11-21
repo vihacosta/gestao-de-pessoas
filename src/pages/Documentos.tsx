@@ -19,7 +19,9 @@ import {
 import { novoId, remover, salvar, useTabela } from '../lib/store'
 import type { ConfigEmpresa, Funcionario, GrupoModelo, ModeloEnviado } from '../lib/types'
 
-const grupos: GrupoModelo[] = ['admissao', 'avulso', 'coletivo']
+const grupos: GrupoModelo[] = ['admissao', 'demissao', 'avulso', 'coletivo']
+/** Os modelos padrão de demissão têm prazos calculados: são gerados pelo botão Desligamento, na ficha */
+const geraNestaTela = (m: Modelo) => !m.id.startsWith('demissao-')
 const conhecidos = new Set([...camposFuncionario.map(([k]) => k), 'socio_nome', 'socio_cpf'])
 
 export function useModelos() {
@@ -137,17 +139,19 @@ function Gerar() {
         <Campo rotulo="Documento">
           <Selecao required value={modeloId} onChange={(e) => setModeloId(e.target.value)}>
             <option value="">Escolha o documento…</option>
-            {grupos.map((g) => (
-              <optgroup key={g} label={nomesGrupo[g]}>
-                {modelos
-                  .filter((x) => x.grupo === g)
-                  .map((x) => (
-                    <option key={x.id} value={x.id}>
-                      {x.titulo}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
+            {grupos
+              .filter((g) => modelos.some((x) => x.grupo === g && geraNestaTela(x)))
+              .map((g) => (
+                <optgroup key={g} label={nomesGrupo[g]}>
+                  {modelos
+                    .filter((x) => x.grupo === g && geraNestaTela(x))
+                    .map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.titulo}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
           </Selecao>
         </Campo>
 
@@ -243,7 +247,7 @@ function Gerar() {
           <FileText size={16} /> Como funciona
         </div>
         <p>Escolha o documento e o funcionário: o sistema preenche nome, CPF, carteira de trabalho e data, e baixa o arquivo em Word pronto para imprimir.</p>
-        <p className="mt-2">Para gerar todos os documentos de admissão de uma vez, use o botão <b>Kit de admissão</b> na ficha do funcionário.</p>
+        <p className="mt-2">Para gerar todos os documentos de admissão de uma vez, use o botão <b>Kit de admissão</b> na ficha do funcionário. Os documentos de demissão saem pelo botão <b>Desligamento</b>, na mesma ficha.</p>
       </Cartao>
     </form>
   )

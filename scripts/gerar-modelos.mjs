@@ -199,6 +199,14 @@ const preambuloAcordo = `Pelo presente instrumento particular, ${QUALIFICACAO}, 
 
 const preambuloColetivo = `Termo de acordo que celebram, de um lado, ${QUALIFICACAO}, por meio de seu representante legal, e, de outro lado, os funcionários abaixo indicados, mediante as condições a seguir:`
 
+const dadosDesligamento = [
+  ['Funcionário(a)', '**{{nome}}**'],
+  ['CPF', '{{cpf}}'],
+  ['CTPS', '{{ctps}}'],
+  ['Cargo', '{{cargo}}'],
+  ['Admissão', '{{data_admissao}}'],
+]
+
 // ---------------------------------------------------------------- documentos
 
 const DOCUMENTOS = [
@@ -445,6 +453,103 @@ const DOCUMENTOS = [
       b.assinaturas(['{{socio_nome}}', 'Sócio-administrador', EMPRESA_CURTO]),
     ],
   },
+  {
+    id: 'demissao-1-aviso-previo-trabalhado',
+    titulo: 'Aviso prévio trabalhado',
+    corpo: [
+      b.campos(dadosDesligamento),
+      b.p('Comunicamos que, a partir desta data, seu contrato de trabalho será rescindido **sem justa causa**, por iniciativa da empresa, com aviso prévio de **{{dias_aviso}} dias**, contados a partir do dia seguinte ao recebimento deste comunicado.'),
+      b.p('Você deverá trabalhar **{{dias_trabalhados}} dias**, sendo seu último dia de trabalho **{{ultimo_dia}}**. {{texto_proporcional}}'),
+      b.p('Conforme o artigo 488 da CLT, escolha como deseja cumprir a redução da jornada durante o aviso, sem prejuízo do salário:'),
+      b.lista(['(   ) Sair **2 (duas) horas antes** ou entrar 2 (duas) horas depois, todos os dias.', '(   ) Deixar de trabalhar nos **últimos 7 (sete) dias corridos** do aviso.']),
+      b.final('As verbas rescisórias serão pagas até **{{prazo_pagamento}}**, conforme o § 6º do artigo 477 da CLT.'),
+      b.local(),
+      b.assinaturas(empresa, funcionario('Ciente em ____/____/________')),
+    ],
+  },
+  {
+    id: 'demissao-2-aviso-previo-indenizado',
+    titulo: 'Aviso prévio indenizado',
+    corpo: [
+      b.campos(dadosDesligamento),
+      b.p('Comunicamos que seu contrato de trabalho está sendo rescindido **sem justa causa**, por iniciativa da empresa, **nesta data**, com dispensa do cumprimento do aviso prévio.'),
+      b.p('O aviso prévio de **{{dias_aviso}} dias** será pago de forma indenizada e integra seu tempo de serviço, com projeção do contrato até **{{projecao}}**, conforme o § 1º do artigo 487 da CLT e a Lei nº 12.506/2011.'),
+      b.final('As verbas rescisórias serão pagas até **{{prazo_pagamento}}**, conforme o § 6º do artigo 477 da CLT.'),
+      b.local(),
+      b.assinaturas(empresa, funcionario('Ciente em ____/____/________')),
+    ],
+  },
+  {
+    id: 'demissao-3-pedido-de-demissao',
+    titulo: 'Pedido de demissão',
+    corpo: [
+      b.p(`Eu, **{{nome}}**, CPF nº {{cpf}}, CTPS nº {{ctps}}, ocupante do cargo de {{cargo}}, admitido(a) em {{data_admissao}}, comunico à **${EMPRESA}**, de minha livre e espontânea vontade, que não desejo continuar no emprego e peço a rescisão do meu contrato de trabalho.`),
+      b.p('{{texto_aviso}}'),
+      b.final('Declaro que este pedido foi feito sem qualquer coação ou pressão.'),
+      b.local(),
+      b.assinaturas(funcionario('CTPS: {{ctps}}'), empresa),
+    ],
+  },
+  {
+    id: 'demissao-4-acordo-484a',
+    titulo: 'Termo de rescisão por acordo',
+    corpo: [
+      b.p(`Pelo presente instrumento, ${QUALIFICACAO}, doravante denominada **EMPREGADORA**, e **{{nome}}**, CPF nº {{cpf}}, CTPS nº {{ctps}}, ocupante do cargo de {{cargo}}, admitido(a) em {{data_admissao}}, doravante denominado(a) **EMPREGADO(A)**, de comum acordo e por livre vontade, resolvem extinguir o contrato de trabalho na forma do **artigo 484-A da CLT**, com último dia em **{{ultimo_dia}}**.`),
+      b.p('Conforme a lei, nesta modalidade:'),
+      b.lista([
+        'o aviso prévio indenizado é pago pela **metade**: {{dias_indenizados}} dos {{dias_aviso}} dias;',
+        'a indenização sobre o saldo do FGTS é de **20%**;',
+        'as demais verbas trabalhistas são pagas **integralmente**;',
+        'o(a) empregado(a) pode sacar até **80%** do saldo do FGTS;',
+        'o(a) empregado(a) **não tem direito ao seguro-desemprego**.',
+      ]),
+      b.final('As verbas rescisórias serão pagas até **{{prazo_pagamento}}**, conforme o § 6º do artigo 477 da CLT.'),
+      b.local(),
+      b.assinaturas(empresa, funcionario()),
+    ],
+  },
+  {
+    id: 'demissao-5-termino-experiencia',
+    titulo: 'Término do contrato de experiência',
+    corpo: [
+      b.campos(dadosDesligamento),
+      b.p('Comunicamos que seu contrato de experiência **não será prorrogado nem convertido** em contrato por prazo indeterminado, encerrando-se em **{{ultimo_dia}}**, que será seu último dia de trabalho.'),
+      b.final('As verbas rescisórias serão pagas até **{{prazo_pagamento}}**, conforme o § 6º do artigo 477 da CLT.'),
+      b.local(),
+      b.assinaturas(empresa, funcionario('Ciente em ____/____/________')),
+    ],
+  },
+  {
+    id: 'demissao-6-rescisao-estagio',
+    titulo: 'Termo de rescisão de estágio',
+    corpo: [
+      b.p(`Pelo presente termo, ${QUALIFICACAO}, na condição de **PARTE CONCEDENTE**, e **{{nome}}**, CPF nº {{cpf}}, na condição de **ESTAGIÁRIO(A)**, vinculado(a) à instituição de ensino **{{instituicao}}**, encerram o Termo de Compromisso de Estágio, nos termos da Lei nº 11.788/2008, com último dia em **{{ultimo_dia}}**.`),
+      b.p('O encerramento do estágio não gera vínculo empregatício. Serão pagos a bolsa e o recesso proporcional eventualmente devidos até essa data.'),
+      b.final('A instituição de ensino deverá ser informada deste encerramento.'),
+      b.local(),
+      b.assinaturas(empresa, funcionario()),
+      b.assinaturas(['{{instituicao}}', 'Instituição de ensino']),
+    ],
+  },
+  {
+    id: 'demissao-7-devolucao-materiais',
+    titulo: 'Termo de devolução de materiais',
+    corpo: [
+      b.campos(dadosDesligamento),
+      b.p('Declaramos que, no desligamento do(a) funcionário(a) acima, foram conferidos os itens abaixo:'),
+      b.lista([
+        '(   ) Uniformes  –  quantidade: ______',
+        '(   ) Crachá',
+        '(   ) Chaves  –  quais: ______________________',
+        '(   ) Celular, computador ou outros equipamentos: ______________________',
+        '(   ) Outros: ______________________',
+        '(   ) Nenhum item a devolver',
+      ]),
+      b.final('Observações: ____________________________________________________________'),
+      b.local(),
+      b.assinaturas(empresa, funcionario()),
+    ],
+  },
 ]
 
 // ---------------------------------------------------------------- pacote .docx
@@ -545,7 +650,9 @@ const propriedades = (titulo) => `<?xml version="1.0" encoding="UTF-8" standalon
 
 mkdirSync(saida, { recursive: true })
 const hdr = cabecalho()
-for (const d of DOCUMENTOS) {
+// node scripts/gerar-modelos.mjs demissao → gera só os modelos cujo id começa com "demissao"
+const filtro = process.argv[2] ?? ''
+for (const d of DOCUMENTOS.filter((x) => x.id.startsWith(filtro))) {
   const zip = new PizZip()
   zip.file('[Content_Types].xml', tipos)
   zip.file('_rels/.rels', relsRaiz)

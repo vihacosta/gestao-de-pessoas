@@ -147,7 +147,7 @@ export interface ConfigEmpresa {
   toleranciaJustificativa?: number
 }
 
-export type GrupoModelo = 'admissao' | 'avulso' | 'coletivo'
+export type GrupoModelo = 'admissao' | 'demissao' | 'avulso' | 'coletivo'
 
 export interface ModeloEnviado {
   id: string

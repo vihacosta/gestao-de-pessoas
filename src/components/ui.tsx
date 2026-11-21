@@ -55,7 +55,7 @@ export function Cabecalho({ titulo, subtitulo, acoes }: { titulo: string; subtit
         <h1 className="text-2xl font-bold">{titulo}</h1>
         {subtitulo && <p className="text-sm text-gray-500">{subtitulo}</p>}
       </div>
-      {acoes && <div className="flex gap-2">{acoes}</div>}
+      {acoes && <div className="flex flex-wrap gap-2">{acoes}</div>}
     </div>
   )
 }
