@@ -16,7 +16,7 @@ const doc = (t: TipoDocPessoal): DocumentoGuardado => ({
 describe('documentos pessoais', () => {
   it('sem nada enviado, tudo pendente (CNH/RG/CPF contam como um)', () => {
     expect(pendenciasPessoais({}, [])).toEqual([
-      'Foto do funcionário',
+      'Foto do colaborador',
       'Carteira de Trabalho (CTPS)',
       'CNH ou RG + CPF',
       'Comprovante do estado civil',

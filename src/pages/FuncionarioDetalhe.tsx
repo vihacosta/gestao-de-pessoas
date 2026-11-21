@@ -25,6 +25,7 @@ import { DocumentosPessoais } from '../components/DocumentosPessoais'
 import { usaValeTransporte } from '../lib/documentosPessoais'
 import { FotoFuncionario } from '../components/FotoFuncionario'
 import { ConferenciaDados } from '../components/ConferenciaDados'
+import { HistoricoFerias } from '../components/HistoricoFerias'
 import { HistoricoOcorrencias } from '../components/HistoricoOcorrencias'
 import { ErrosFuncionario } from '../components/ErrosFuncionario'
 import { AquisicoesFuncionario } from '../components/AquisicoesFuncionario'
@@ -60,7 +61,7 @@ export default function FuncionarioDetalhe() {
 
   const f = funcs.rows.find((x) => x.id === id)
   if (funcs.carregando) return null
-  if (!f) return <Vazio>Funcionário não encontrado.</Vazio>
+  if (!f) return <Vazio>Colaborador não encontrado.</Vazio>
 
   const periodos = periodosAquisitivos(f, ferias, ausencias, hoje)
   const status = statusFerias(periodos, hoje)
@@ -115,7 +116,7 @@ export default function FuncionarioDetalhe() {
   return (
     <>
       <Link to="/funcionarios" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800">
-        <ArrowLeft size={14} /> Funcionários
+        <ArrowLeft size={14} /> Colaboradores
       </Link>
       <Cabecalho
         titulo={f.nome}
@@ -337,6 +338,8 @@ export default function FuncionarioDetalhe() {
           )}
         </Cartao>
         )}
+
+        <HistoricoFerias funcionario={f} ferias={ferias} />
 
         {/* Salários */}
         {pode('valores') && (

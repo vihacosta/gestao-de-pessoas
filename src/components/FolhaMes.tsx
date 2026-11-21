@@ -127,13 +127,13 @@ export function FolhaMes({ mes, tituloMes, ativos }: { mes: string; tituloMes: s
       {falha && <p className="bg-red-50 px-4 py-2 text-sm text-red-800">{falha}</p>}
 
       {linhas.length === 0 ? (
-        <Vazio>Nenhum funcionário neste mês.</Vazio>
+        <Vazio>Nenhum colaborador neste mês.</Vazio>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-right text-xs text-gray-500">
               <tr>
-                <th className="sticky left-0 bg-gray-50 px-4 py-2 text-left font-medium">Funcionário</th>
+                <th className="sticky left-0 bg-gray-50 px-4 py-2 text-left font-medium">Colaborador</th>
                 <th className="px-2 py-2 font-medium">Salário bruto</th>
                 <th className="px-2 py-2 font-medium">Compras</th>
                 <th className="px-2 py-2 font-medium">Erros</th>

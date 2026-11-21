@@ -61,7 +61,7 @@ export default function CartaoPontoPage() {
     try {
       const buf = await f.arrayBuffer()
       const r = lerCartoes(await lerTextoPdf(buf))
-      if (!r.cartoes.length) throw new Error('Nenhum funcionário encontrado no arquivo.')
+      if (!r.cartoes.length) throw new Error('Nenhum colaborador encontrado no arquivo.')
       setArquivo({ nome: f.name, buf })
       setLido(r)
       setVinculos(Object.fromEntries(r.cartoes.map((c, i) => [i, encontrarFuncionario(c, funcionarios)?.id ?? ''])))
@@ -115,7 +115,7 @@ export default function CartaoPontoPage() {
         n++
       }
       await enviarArquivo(`ponto/${lido.mes}/completo.pdf`, new Blob([arquivo.buf], { type: 'application/pdf' }))
-      setSalvoMsg(`${n} cartões de ${nomeMes(lido.mes)} salvos, um em cada funcionário.`)
+      setSalvoMsg(`${n} cartões de ${nomeMes(lido.mes)} salvos, um em cada colaborador.`)
       setLido(null)
       setArquivo(null)
     } catch (e) {
@@ -128,13 +128,13 @@ export default function CartaoPontoPage() {
 
   return (
     <>
-      <Cabecalho titulo="Cartão ponto" subtitulo="Envie o PDF do mês: o sistema separa por funcionário e calcula o bônus por assiduidade" />
+      <Cabecalho titulo="Cartão ponto" subtitulo="Envie o PDF do mês: o sistema separa por colaborador e calcula o bônus por assiduidade" />
 
       <Cartao className="mb-4 p-5">
         <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 p-6 text-center hover:border-marca-500 hover:bg-marca-50">
           <FileUp className="text-marca-600" />
           <span className="font-medium">Escolher o PDF do cartão ponto</span>
-          <span className="text-xs text-gray-500">O arquivo "Cartão Ponto" do mês, exportado do sistema de ponto, com todos os funcionários</span>
+          <span className="text-xs text-gray-500">O arquivo "Cartão Ponto" do mês, exportado do sistema de ponto, com todos os colaboradores</span>
           <input type="file" accept="application/pdf" className="hidden" onChange={(e) => escolher(e.target.files?.[0] ?? null)} onClick={(e) => ((e.target as HTMLInputElement).value = '')} />
         </label>
         {ocupado && <p className="mt-3 text-sm text-gray-600">{ocupado}</p>}
@@ -148,11 +148,11 @@ export default function CartaoPontoPage() {
             <div>
               <div className="font-semibold">{nomeMes(lido.mes)}</div>
               <div className="text-xs text-gray-500">
-                {arquivo?.nome} · {lido.cartoes.length} funcionários
+                {arquivo?.nome} · {lido.cartoes.length} colaboradores
               </div>
             </div>
             <Botao onClick={salvarTudo} disabled={!!ocupado || !Object.values(vinculos).some(Boolean)}>
-              Salvar e separar por funcionário
+              Salvar e separar por colaborador
             </Botao>
           </div>
           <div className="overflow-x-auto">
@@ -160,7 +160,7 @@ export default function CartaoPontoPage() {
               <thead className="bg-gray-50 text-left text-xs text-gray-500">
                 <tr>
                   <th className="px-4 py-2 font-medium">No cartão</th>
-                  <th className="px-3 py-2 font-medium">Funcionário no sistema</th>
+                  <th className="px-3 py-2 font-medium">Colaborador no sistema</th>
                   <th className="px-3 py-2 font-medium">Faltas/atrasos</th>
                   <th className="px-3 py-2 font-medium">Extras</th>
                   <th className="px-3 py-2 font-medium">Banco</th>
@@ -260,7 +260,7 @@ export default function CartaoPontoPage() {
 function MesImportado({ mes, pontos, funcionarios }: { mes: string; pontos: CartaoPontoSalvo[]; funcionarios: Funcionario[] }) {
   const { rows: documentos } = useTabela<DocumentoGuardado>('documentos')
   const assinado = (fid: string) => documentos.some((x) => x.funcionarioId === fid && x.categoria === 'ponto_assinado' && x.mes === mes)
-  const nome = (id: string) => funcionarios.find((f) => f.id === id)?.nome ?? '(funcionário excluído)'
+  const nome = (id: string) => funcionarios.find((f) => f.id === id)?.nome ?? '(colaborador excluído)'
   const proximo = format(addMonths(d(`${mes}-01`), 0), 'yyyy-MM')
 
   async function baixar(p: CartaoPontoSalvo) {
@@ -295,7 +295,7 @@ function MesImportado({ mes, pontos, funcionarios }: { mes: string; pontos: Cart
               <span className="flex-1">{nome(p.funcionarioId)}</span>
               <span className="text-xs text-gray-500">banco {hm(p.saldoTotal)}</span>
               {assinado(p.funcionarioId) ? <Selo cor="verde">assinado</Selo> : <Link to={`/holerites?mes=${mes}`}><Selo cor="amarelo">falta o assinado</Selo></Link>}
-              <Botao variante="fantasma" className="px-2 py-1" onClick={() => baixar(p)} title="Baixar o PDF deste funcionário">
+              <Botao variante="fantasma" className="px-2 py-1" onClick={() => baixar(p)} title="Baixar o PDF deste colaborador">
                 <Download size={14} />
               </Botao>
             </li>

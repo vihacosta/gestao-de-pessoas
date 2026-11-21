@@ -209,7 +209,7 @@ td:nth-child(1) { width: 48px } td:nth-child(2) { width: 22% } td:nth-child(3) {
 </style></head><body>
 <h1>${esc(args.titulo)}</h1>
 <p>Escreva o motivo de cada falta ou horas devidas e assine. Ao assinar, declaro que a informação é verdadeira.</p>
-<table><thead><tr><th>Data</th><th>Funcionário</th><th>Ocorrência</th><th>Motivo</th><th>Assinatura</th></tr></thead><tbody>${linhas}${brancas}</tbody></table>
+<table><thead><tr><th>Data</th><th>Colaborador</th><th>Ocorrência</th><th>Motivo</th><th>Assinatura</th></tr></thead><tbody>${linhas}${brancas}</tbody></table>
 <script>window.onload = () => { window.print() }</script>
 </body></html>`
 }

@@ -91,7 +91,7 @@ export function ImportarHistorico() {
       const registros = registrosDoHistorico(linhas, mapa)
       await salvarVarios<Funcionario>('funcionarios', novos)
       await salvarVarios<Justificativa>('justificativas', registros)
-      setFeito(`${registros.length} ocorrência(s) importada(s)${novos.length ? ` e ${novos.length} ex-funcionário(s) cadastrado(s)` : ''}.`)
+      setFeito(`${registros.length} ocorrência(s) importada(s)${novos.length ? ` e ${novos.length} ex-colaborador(s) cadastrado(s)` : ''}.`)
       setLinhas(null)
     } catch (e) {
       alert('Não foi possível importar: ' + String((e as Error).message ?? e))
@@ -121,7 +121,7 @@ export function ImportarHistorico() {
           ) : (
             <>
               <p className="text-gray-600">
-                Escolha com quem cada nome da planilha vai ser ligado. Quem não está no sistema (ex-funcionários) pode ser cadastrado como desligado, só com o nome. Importar de novo
+                Escolha com quem cada nome da planilha vai ser ligado. Quem não está no sistema (ex-colaboradores) pode ser cadastrado como desligado, só com o nome. Importar de novo
                 a mesma planilha não duplica nada.
               </p>
               <div className="max-h-[50vh] overflow-y-auto rounded-lg border border-gray-200">
@@ -149,7 +149,7 @@ export function ImportarHistorico() {
                         <td className="px-3 py-2">
                           <Selecao value={vinculo[p.nome] ?? NAO} onChange={(e) => setVinculo({ ...vinculo, [p.nome]: e.target.value })} className="py-1.5">
                             <option value={NAO}>Não importar</option>
-                            <option value={NOVO}>Cadastrar como ex-funcionário ({titulo(p.nome)})</option>
+                            <option value={NOVO}>Cadastrar como ex-colaborador ({titulo(p.nome)})</option>
                             {ordenados.map((f) => (
                               <option key={f.id} value={f.id}>
                                 {f.nome}

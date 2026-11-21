@@ -145,7 +145,7 @@ export function linhasResumo(f: Fechamento, tituloMes: string, falhas: ItemPacot
   const r: (string | number)[][] = [
     [`Fechamento mensal - ${tituloMes}`],
     [],
-    ['Funcionário', 'Holerite assinado', 'Cartão ponto assinado', 'Atestados e licenças'],
+    ['Colaborador', 'Holerite assinado', 'Cartão ponto assinado', 'Atestados e licenças'],
     ...f.linhas.map((l) => [l.funcionario.nome, l.holerite ? 'Sim' : 'Falta', l.ponto ? 'Sim' : 'Falta', l.comprovantes]),
     [],
     ['Folha de justificativas', f.folhasJustificativa ? 'Sim' : f.ocorrencias ? 'Falta' : 'Sem ocorrências no mês'],

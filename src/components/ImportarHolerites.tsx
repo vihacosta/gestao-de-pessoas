@@ -79,7 +79,7 @@ export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
         })
         n++
       }
-      setMsg(`${n} holerite(s) guardado(s), um na ficha de cada funcionário.`)
+      setMsg(`${n} holerite(s) guardado(s), um na ficha de cada colaborador.`)
       setLidos(null)
       setArquivo(null)
     } catch (e) {
@@ -94,7 +94,7 @@ export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
         <FileUp className="shrink-0 text-marca-600" />
         <span>
           <span className="block font-medium">Importar o PDF de holerites da contabilidade</span>
-          <span className="text-xs text-gray-500">Separa por funcionário pelo CPF, guarda na ficha de cada um e confere o salário com o cadastro</span>
+          <span className="text-xs text-gray-500">Separa por colaborador pelo CPF, guarda na ficha de cada um e confere o salário com o cadastro</span>
         </span>
         <input type="file" accept="application/pdf" className="hidden" onChange={(e) => escolher(e.target.files?.[0] ?? null)} onClick={(e) => ((e.target as HTMLInputElement).value = '')} />
       </label>
@@ -109,7 +109,7 @@ export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
               {arquivo?.nome} · {lidos.length} holerite(s) de {mesBR(lidos[0].mes)}
             </span>
             <Botao onClick={salvarTudo} disabled={!!ocupado || !Object.values(vinculos).some(Boolean)}>
-              Salvar e separar por funcionário
+              Salvar e separar por colaborador
             </Botao>
           </div>
           <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -117,7 +117,7 @@ export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
               <thead className="bg-gray-50 text-left text-xs text-gray-500">
                 <tr>
                   <th className="px-3 py-2 font-medium">No holerite</th>
-                  <th className="px-3 py-2 font-medium">Funcionário no sistema</th>
+                  <th className="px-3 py-2 font-medium">Colaborador no sistema</th>
                   <th className="px-3 py-2 font-medium">Salário</th>
                   <th className="px-3 py-2 font-medium">Líquido</th>
                 </tr>

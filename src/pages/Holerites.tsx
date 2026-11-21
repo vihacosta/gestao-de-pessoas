@@ -1,10 +1,11 @@
 import { addMonths, endOfMonth, format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Eye, FileText, Trash2 } from 'lucide-react'
+import { Eye, FileText, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EnviarArquivos } from '../components/EnviarArquivos'
 import { ImportarHolerites } from '../components/ImportarHolerites'
+import { SeletorMes } from '../components/SeletorMes'
 import { SepararDigitalizados } from '../components/SepararDigitalizados'
 import { Botao, Cabecalho, Cartao, Selo, Vazio } from '../components/ui'
 import { d, iso } from '../lib/clt'
@@ -84,25 +85,16 @@ export default function Holerites() {
   const lista = useMemo(() => ativosNoMes(funcionarios, mes).sort((a, b) => a.nome.localeCompare(b.nome)), [funcionarios, mes])
   const doc = (fid: string, cat: CategoriaDocumento) => documentos.find((x) => x.funcionarioId === fid && x.categoria === cat && x.mes === mes)
   const pend = pendenciasAssinatura(funcionarios, documentos, mes)
-  const mudar = (n: number) => setMes(format(addMonths(d(`${mes}-01`), n), 'yyyy-MM'))
 
   return (
     <>
-      <Cabecalho titulo="Holerites e cartões assinados" subtitulo="Guarde a foto ou o PDF de cada documento assinado, por funcionário e por mês" />
+      <Cabecalho titulo="Holerites e cartões assinados" subtitulo="Guarde a foto ou o PDF de cada documento assinado, por colaborador e por mês" />
 
       <ImportarHolerites onMes={setMes} />
       <SepararDigitalizados />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1">
-          <Botao variante="fantasma" className="px-2" onClick={() => mudar(-1)} aria-label="Mês anterior">
-            <ChevronLeft size={18} />
-          </Botao>
-          <span className="min-w-40 text-center font-medium">{nomeMes(mes)}</span>
-          <Botao variante="fantasma" className="px-2" onClick={() => mudar(1)} aria-label="Próximo mês">
-            <ChevronRight size={18} />
-          </Botao>
-        </div>
+        <SeletorMes mes={mes} onMudar={setMes} />
         <div className="flex gap-2 text-sm">
           <Selo cor={pend.holerites ? 'amarelo' : 'verde'}>
             Holerites: {pend.total - pend.holerites}/{pend.total}
@@ -114,12 +106,12 @@ export default function Holerites() {
       </div>
 
       <Cartao>
-        {!carregando && lista.length === 0 && <Vazio>Nenhum funcionário neste mês.</Vazio>}
+        {!carregando && lista.length === 0 && <Vazio>Nenhum colaborador neste mês.</Vazio>}
         {/* computador: tabela */}
         <table className="hidden w-full text-sm md:table">
           <thead className="bg-gray-50 text-left text-xs text-gray-500">
             <tr>
-              <th className="px-4 py-2 font-medium">Funcionário</th>
+              <th className="px-4 py-2 font-medium">Colaborador</th>
               <th className="px-3 py-2 font-medium">Holerite assinado</th>
               <th className="px-3 py-2 font-medium">Cartão ponto assinado</th>
             </tr>

@@ -1,12 +1,11 @@
-import { addMonths, format } from 'date-fns'
-import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Download, Loader2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { FolhaMes } from '../components/FolhaMes'
+import { SeletorMes } from '../components/SeletorMes'
 import { Botao, Cabecalho, Cartao, Selo, Vazio } from '../components/ui'
 import { baixarArquivo, salvarNoComputador } from '../lib/arquivos'
-import { d } from '../lib/clt'
 import { gerarPacote, montarFechamento, type GrupoPendencia, type ItemPacote } from '../lib/fechamento'
 import type { Justificativa } from '../lib/justificativas'
 import { useTabela } from '../lib/store'
@@ -25,11 +24,11 @@ const GRUPOS: { id: GrupoPendencia; rotulo: string; acao: string; link: (mes: st
 export default function Fechamento() {
   const [params, setParams] = useSearchParams()
   const mes = params.get('mes') ?? mesAnterior()
-  const mudar = (n: number) => {
+  const mudar = (novo: string) => {
     setFalhas([])
     setPronto(false)
     setErro('')
-    setParams({ mes: format(addMonths(d(`${mes}-01`), n), 'yyyy-MM') })
+    setParams({ mes: novo })
   }
   const { rows: funcionarios, carregando } = useTabela<Funcionario>('funcionarios')
   const { rows: documentos } = useTabela<DocumentoGuardado>('documentos')
@@ -79,15 +78,7 @@ export default function Fechamento() {
       <Cabecalho titulo="Fechamento mensal" subtitulo="Confira os documentos e a folha do mês e baixe o pacote para enviar à contabilidade" />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1">
-          <Botao variante="fantasma" className="px-2" onClick={() => mudar(-1)} aria-label="Mês anterior">
-            <ChevronLeft size={18} />
-          </Botao>
-          <span className="min-w-40 text-center font-medium">{nomeMes(mes)}</span>
-          <Botao variante="fantasma" className="px-2" onClick={() => mudar(1)} aria-label="Próximo mês">
-            <ChevronRight size={18} />
-          </Botao>
-        </div>
+        <SeletorMes mes={mes} onMudar={mudar} />
         <Botao onClick={baixarPacote} disabled={!!progresso || carregando || f.itens.length === 0}>
           {progresso ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
           {progresso ? `Preparando ${progresso.feitos} de ${progresso.total}…` : `Baixar pacote (${f.itens.length} ${f.itens.length === 1 ? 'arquivo' : 'arquivos'})`}
@@ -113,7 +104,7 @@ export default function Fechamento() {
 
       {!carregando && total === 0 ? (
         <Cartao>
-          <Vazio>Nenhum funcionário neste mês.</Vazio>
+          <Vazio>Nenhum colaborador neste mês.</Vazio>
         </Cartao>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

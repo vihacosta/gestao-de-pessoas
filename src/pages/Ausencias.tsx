@@ -1,11 +1,12 @@
-import { addMonths, format } from 'date-fns'
+import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Copy, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Copy, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { CartaoBeneficio } from '../components/CartaoBeneficio'
 import { HistoricoOcorrencias, SeletorTolerancia } from '../components/HistoricoOcorrencias'
+import { SeletorMes } from '../components/SeletorMes'
 import { Botao, Cabecalho, Campo, Cartao, Entrada, Modal, Selecao, Selo, Vazio, cx, Oculto } from '../components/ui'
 import { ACEITOS } from '../components/EnviarArquivos'
 import { apagarArquivo, enviarArquivo } from '../lib/arquivos'
@@ -37,21 +38,6 @@ export const nomesTipo: Record<TipoAusencia, string> = {
 const parciais: TipoAusencia[] = ['atraso', 'saida_antecipada']
 
 const nomeMes = (m: string) => { const t = format(d(`${m}-01`), "MMMM 'de' yyyy", { locale: ptBR }); return t[0].toUpperCase() + t.slice(1) }
-
-function SeletorMes({ mes, onMudar }: { mes: string; onMudar: (m: string) => void }) {
-  const mudar = (n: number) => onMudar(format(addMonths(d(`${mes}-01`), n), 'yyyy-MM'))
-  return (
-    <div className="flex items-center gap-1">
-      <Botao variante="fantasma" className="px-2" onClick={() => mudar(-1)} aria-label="Mês anterior">
-        <ChevronLeft size={18} />
-      </Botao>
-      <span className="min-w-40 text-center font-medium">{nomeMes(mes)}</span>
-      <Botao variante="fantasma" className="px-2" onClick={() => mudar(1)} aria-label="Próximo mês">
-        <ChevronRight size={18} />
-      </Botao>
-    </div>
-  )
-}
 
 export default function Ausencias() {
   const [params, setParams] = useSearchParams()
@@ -281,7 +267,7 @@ function BonusMes({ mes }: { mes: string }) {
             <Copy size={14} /> {copiado ? 'Copiado!' : 'Copiar lista'}
           </Botao>
         </div>
-        {linhas.length === 0 && <Vazio>Nenhum funcionário neste mês.</Vazio>}
+        {linhas.length === 0 && <Vazio>Nenhum colaborador neste mês.</Vazio>}
         <ul className="divide-y divide-gray-100">
           {linhas.map(({ f, r }) => (
             <li key={f.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
@@ -378,7 +364,7 @@ function FormOcorrencia({ aberto, atual, onFechar, onSalvo }: { aberto: boolean;
   return (
     <Modal titulo={atual ? 'Editar ocorrência' : 'Nova ocorrência'} aberto={aberto} onFechar={onFechar}>
       <form onSubmit={enviar} className="space-y-4 p-5">
-        <Campo rotulo="Funcionário">
+        <Campo rotulo="Colaborador">
           <Selecao required value={a.funcionarioId} onChange={(e) => setA({ ...a, funcionarioId: e.target.value })}>
             <option value="">Escolha…</option>
             {funcionarios

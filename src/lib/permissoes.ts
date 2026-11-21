@@ -10,7 +10,7 @@ export type NivelPermissao = 'ver' | 'editar'
 export type Permissoes = Partial<Record<Modulo, NivelPermissao>>
 
 export const MODULOS: { id: Modulo; rotulo: string; descricao: string }[] = [
-  { id: 'funcionarios', rotulo: 'Funcionários', descricao: 'Cadastro, dados pessoais e documentos da ficha' },
+  { id: 'funcionarios', rotulo: 'Colaboradores', descricao: 'Cadastro, dados pessoais e documentos da ficha' },
   { id: 'ferias', rotulo: 'Férias', descricao: 'Saldos, pedidos e férias coletivas' },
   { id: 'documentos', rotulo: 'Documentos', descricao: 'Modelos e geração de documentos' },
   { id: 'holerites', rotulo: 'Holerites', descricao: 'Holerites e cartões assinados, com os valores dos holerites' },

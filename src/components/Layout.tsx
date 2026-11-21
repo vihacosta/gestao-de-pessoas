@@ -32,7 +32,7 @@ interface Area {
 
 export const areas: Area[] = [
   { to: '/', rotulo: 'Painel', icone: LayoutDashboard, fim: true },
-  { to: '/funcionarios', rotulo: 'Funcionários', icone: Users },
+  { to: '/funcionarios', rotulo: 'Colaboradores', icone: Users },
   { to: '/ferias', rotulo: 'Férias', icone: Palmtree },
   { to: '/documentos', rotulo: 'Documentos', icone: FileSignature },
   { to: '/holerites', rotulo: 'Holerites', icone: FolderArchive },
@@ -158,7 +158,7 @@ export default function Layout() {
         {modoDemo && (
           <div className="flex flex-wrap items-center justify-center gap-x-3 bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">
             <span>
-              <b>Modo demonstração:</b> os dados ficam só neste navegador e os funcionários de exemplo são fictícios.
+              <b>Modo demonstração:</b> os dados ficam só neste navegador e os colaboradores de exemplo são fictícios.
             </span>
             <button className="underline" onClick={() => confirm('Apagar tudo e voltar aos dados de exemplo?') && resetarDemo()}>
               Restaurar exemplo

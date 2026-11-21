@@ -33,7 +33,7 @@ export function SepararDigitalizados() {
         <Scissors size={16} /> Cartões ponto digitalizados para separar
       </div>
       <p className="mb-3 text-sm text-gray-600">
-        Nestes meses o PDF digitalizado traz o cartão de todos os funcionários juntos e foi guardado inteiro na ficha de cada um. Escolha de quem é cada página para cada
+        Nestes meses o PDF digitalizado traz o cartão de todos os colaboradores juntos e foi guardado inteiro na ficha de cada um. Escolha de quem é cada página para cada
         pessoa ficar só com o seu.
       </p>
       <div className="flex flex-wrap gap-1.5">
@@ -206,7 +206,7 @@ function Separar({ mes: inicial, onFechar }: { mes: MesParaSeparar; onFechar: ()
                         className="text-xs"
                         value=""
                         onChange={(e) => e.target.value && alternar(i, e.target.value)}
-                        title="Para quem não está na lista (ex.: ex-funcionário com a data de saída errada no cadastro)"
+                        title="Para quem não está na lista (ex.: ex-colaborador com a data de saída errada no cadastro)"
                       >
                         <option value="">+ outra pessoa…</option>
                         {outras.map((f) => (

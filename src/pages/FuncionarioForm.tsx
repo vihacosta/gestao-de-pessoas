@@ -100,7 +100,7 @@ export default function FuncionarioForm() {
 
   return (
     <>
-      <Cabecalho titulo={editando ? 'Editar funcionário' : 'Novo funcionário'} subtitulo="Os mesmos dados da ficha de admissão. Só os campos com * são obrigatórios." />
+      <Cabecalho titulo={editando ? 'Editar colaborador' : 'Novo colaborador'} subtitulo="Os mesmos dados da ficha de admissão. Só os campos com * são obrigatórios." />
       <form onSubmit={enviar}>
         <Cartao className="space-y-8 p-5">
           <Secao titulo="Dados pessoais">
@@ -176,7 +176,7 @@ export default function FuncionarioForm() {
             </Campo>
             {texto('horarioJornada', 'Horário da jornada')}
             {editando ? (
-              <Campo rotulo="Data de desligamento" dica="Preencha só se o funcionário saiu da empresa.">
+              <Campo rotulo="Data de desligamento" dica="Preencha só se o colaborador saiu da empresa.">
                 <Entrada type="date" value={f.dataDemissao ?? ''} onChange={(e) => set('dataDemissao', e.target.value || undefined)} />
               </Campo>
             ) : editaValores ? (

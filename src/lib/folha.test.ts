@@ -103,7 +103,7 @@ describe('horas e planilha', () => {
     expect(somaFolha(linhas, 'salario')).toBe(4000)
     const p = linhasPlanilhaFolha(linhas, 'Outubro de 2026', diasUteis)
     expect(p[1]).toEqual(['Dias úteis', 22])
-    expect(p[3][0]).toBe('FUNCIONÁRIO')
+    expect(p[3][0]).toBe('COLABORADOR')
     expect(p[4][0]).toBe('Outra Pessoa')
     expect(p[p.length - 1][0]).toBe('TOTAL')
     expect(p[3].length).toBe(p[4].length)

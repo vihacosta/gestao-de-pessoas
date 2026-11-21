@@ -53,7 +53,7 @@ export async function guardarFoto(funcionarioId: string, foto: Blob, substitui?:
     funcionarioId,
     categoria: 'pessoal',
     tipoPessoal: 'foto',
-    titulo: 'Foto do funcionário',
+    titulo: 'Foto do colaborador',
     caminho,
     tamanho: foto.size,
     enviadoEm: hojeISO(),

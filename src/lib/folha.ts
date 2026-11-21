@@ -159,7 +159,7 @@ type Somavel = 'salario' | 'compras' | 'erros' | 'valeTransporte' | 'descontoVA'
 export const somaFolha = (linhas: LinhaFolha[], k: Somavel) => centavos(linhas.reduce((s, l) => s + l[k], 0))
 
 const COLUNAS = [
-  'FUNCIONÁRIO',
+  'COLABORADOR',
   'SALÁRIO BRUTO',
   'DESCONTO COMPRAS',
   'DESCONTO ERROS',

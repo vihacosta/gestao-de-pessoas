@@ -43,14 +43,14 @@ export default function Funcionarios() {
   return (
     <>
       <Cabecalho
-        titulo="Funcionários"
+        titulo="Colaboradores"
         subtitulo={`${rows.filter((f) => !f.dataDemissao).length} ativos`}
         acoes={
           <>
             <ConferirPlanilhaAtivos />
             <Link to="/funcionarios/novo">
               <Botao>
-                <Plus size={16} /> Novo funcionário
+                <Plus size={16} /> Novo colaborador
               </Botao>
             </Link>
           </>
@@ -75,7 +75,7 @@ export default function Funcionarios() {
 
       <Cartao>
         {erro && <Vazio>Erro ao carregar: {erro}</Vazio>}
-        {!carregando && !erro && lista.length === 0 && <Vazio>Nenhum funcionário encontrado.</Vazio>}
+        {!carregando && !erro && lista.length === 0 && <Vazio>Nenhum colaborador encontrado.</Vazio>}
         <ul className="divide-y divide-gray-100">
           {lista.map((f) => (
             <li key={f.id}>

@@ -54,7 +54,7 @@ export default function Documentos() {
   const aba = params.get('aba') === 'modelos' ? 'modelos' : 'gerar'
   return (
     <>
-      <Cabecalho titulo="Documentos" subtitulo="Modelos da empresa preenchidos com os dados do funcionário" />
+      <Cabecalho titulo="Documentos" subtitulo="Modelos da empresa preenchidos com os dados do colaborador" />
       <div className="mb-5 flex gap-6 border-b border-gray-200 text-sm">
         {(
           [
@@ -156,7 +156,7 @@ function Gerar() {
         </Campo>
 
         {m && !coletivo && (
-          <Campo rotulo="Funcionário">
+          <Campo rotulo="Colaborador">
             <Selecao required value={funcId} onChange={(e) => setFuncId(e.target.value)}>
               <option value="">Escolha…</option>
               {ativos.map((f) => (
@@ -171,7 +171,7 @@ function Gerar() {
         {m && coletivo && (
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Funcionários que vão assinar</span>
+              <span className="text-sm font-medium text-gray-700">Colaboradores que vão assinar</span>
               <button
                 type="button"
                 className="text-xs text-marca-600 underline"
@@ -246,8 +246,8 @@ function Gerar() {
         <div className="mb-2 flex items-center gap-2 font-semibold text-gray-800">
           <FileText size={16} /> Como funciona
         </div>
-        <p>Escolha o documento e o funcionário: o sistema preenche nome, CPF, carteira de trabalho e data, e baixa o arquivo em Word pronto para imprimir.</p>
-        <p className="mt-2">Para gerar todos os documentos de admissão de uma vez, use o botão <b>Kit de admissão</b> na ficha do funcionário. Os documentos de demissão saem pelo botão <b>Desligamento</b>, na mesma ficha.</p>
+        <p>Escolha o documento e o colaborador: o sistema preenche nome, CPF, carteira de trabalho e data, e baixa o arquivo em Word pronto para imprimir.</p>
+        <p className="mt-2">Para gerar todos os documentos de admissão de uma vez, use o botão <b>Kit de admissão</b> na ficha do colaborador. Os documentos de demissão saem pelo botão <b>Desligamento</b>, na mesma ficha.</p>
       </Cartao>
     </form>
   )

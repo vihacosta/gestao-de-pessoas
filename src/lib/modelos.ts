@@ -109,7 +109,7 @@ export const nomesGrupo: Record<GrupoModelo, string> = {
   admissao: 'Admissão',
   demissao: 'Demissão',
   avulso: 'Individuais',
-  coletivo: 'Coletivos (vários funcionários)',
+  coletivo: 'Coletivos (vários colaboradores)',
 }
 
 /** Campos do funcionário disponíveis em qualquer modelo. */
