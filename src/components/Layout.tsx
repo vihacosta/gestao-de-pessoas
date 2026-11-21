@@ -24,8 +24,7 @@ export const areas = [
   { to: '/ferias', rotulo: 'Férias', icone: Palmtree },
   { to: '/documentos', rotulo: 'Documentos', icone: FileSignature },
   { to: '/holerites', rotulo: 'Holerites', icone: FolderArchive },
-  { to: '/justificativas', rotulo: 'Justificativas', icone: ClipboardList },
-  { to: '/ponto', rotulo: 'Cartão ponto', icone: Clock },
+  { to: '/ponto', rotulo: 'Cartão ponto', icone: Clock, fim: true, submenu: [{ to: '/ponto/ocorrencias', rotulo: 'Ocorrências', icone: ClipboardList }] },
   { to: '/ausencias', rotulo: 'Faltas e bônus', icone: Stethoscope },
   { to: '/em-breve/fechamento', rotulo: 'Fechamento mensal', icone: Receipt, embreve: true },
   { to: '/usuarios', rotulo: 'Usuários', icone: UserCog },
@@ -46,21 +45,37 @@ export default function Layout() {
         </div>
         <nav className="flex-1 space-y-1 px-3">
           {areas.map((a) => (
-            <NavLink
-              key={a.to}
-              to={a.to}
-              end={a.fim}
-              className={({ isActive }) =>
-                cx(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm',
-                  isActive ? 'bg-marca-50 font-semibold text-marca-700' : 'text-gray-700 hover:bg-gray-100',
-                )
-              }
-            >
-              <a.icone size={18} />
-              <span className="flex-1">{a.rotulo}</span>
-              {a.embreve && <span className="text-[10px] uppercase text-gray-400">em breve</span>}
-            </NavLink>
+            <div key={a.to} className="space-y-1">
+              <NavLink
+                to={a.to}
+                end={a.fim}
+                className={({ isActive }) =>
+                  cx(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm',
+                    isActive ? 'bg-marca-50 font-semibold text-marca-700' : 'text-gray-700 hover:bg-gray-100',
+                  )
+                }
+              >
+                <a.icone size={18} />
+                <span className="flex-1">{a.rotulo}</span>
+                {a.embreve && <span className="text-[10px] uppercase text-gray-400">em breve</span>}
+              </NavLink>
+              {a.submenu?.map((s) => (
+                <NavLink
+                  key={s.to}
+                  to={s.to}
+                  className={({ isActive }) =>
+                    cx(
+                      'ml-6 flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm',
+                      isActive ? 'bg-marca-50 font-semibold text-marca-700' : 'text-gray-600 hover:bg-gray-100',
+                    )
+                  }
+                >
+                  <s.icone size={16} />
+                  {s.rotulo}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="border-t border-gray-200 p-3 text-xs text-gray-500">

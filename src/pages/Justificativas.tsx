@@ -85,8 +85,8 @@ export default function Justificativas() {
   return (
     <>
       <Cabecalho
-        titulo="Folha de justificativas"
-        subtitulo="Faltas, atrasos e saídas antecipadas do mês para cada pessoa escrever o motivo e assinar"
+        titulo="Ocorrências"
+        subtitulo="Faltas, atrasos não compensados no dia e saídas antecipadas do mês, para cada pessoa escrever o motivo e assinar"
       />
 
       <div className="mb-4 flex gap-1 border-b border-gray-200">
@@ -213,6 +213,7 @@ export default function Justificativas() {
       <p className="mt-3 text-xs text-gray-500">
         Os motivos digitados aqui já saem impressos na folha; os que ficarem em branco, a pessoa escreve à mão. Atestados, férias e licenças não entram na folha.
         "Atraso" e "saída antecipada" são deduzidos comparando as batidas com o horário habitual da pessoa no mês.
+        Atraso compensado no mesmo dia não aparece; se a compensação foi parcial, aparece só o tempo que ficou faltando.
         Faltas sempre aparecem; atrasos e saídas só quando passam do tempo escolhido (o bônus por assiduidade continua contando tudo).
       </p>
       </>

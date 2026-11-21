@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import './index.css'
 import { AuthProvider, useAuth } from './auth'
 import Layout from './components/Layout'
@@ -19,6 +19,12 @@ import CartaoPontoPage from './pages/CartaoPonto'
 import Holerites from './pages/Holerites'
 import Justificativas from './pages/Justificativas'
 
+/** Endereço antigo da tela, mantendo o mês escolhido */
+function RedirecionarOcorrencias() {
+  const { search } = useLocation()
+  return <Navigate to={`/ponto/ocorrencias${search}`} replace />
+}
+
 function Rotas() {
   const { logado, carregando, recuperandoSenha } = useAuth()
   if (carregando) return null
@@ -35,8 +41,9 @@ function Rotas() {
         <Route path="ferias" element={<FeriasPage />} />
         <Route path="documentos" element={<Documentos />} />
         <Route path="holerites" element={<Holerites />} />
-        <Route path="justificativas" element={<Justificativas />} />
+        <Route path="justificativas" element={<RedirecionarOcorrencias />} />
         <Route path="ponto" element={<CartaoPontoPage />} />
+        <Route path="ponto/ocorrencias" element={<Justificativas />} />
         <Route path="ausencias" element={<Ausencias />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="configuracoes" element={<Configuracoes />} />

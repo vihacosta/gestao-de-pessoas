@@ -211,7 +211,7 @@ export default function Painel() {
               </Link>
             )}
             {faltaFolha && (
-              <Link to={`/justificativas?mes=${mesAssinar}`} className="block space-y-1 border-t border-gray-100 px-4 py-3 text-sm hover:bg-gray-50">
+              <Link to={`/ponto/ocorrencias?mes=${mesAssinar}`} className="block space-y-1 border-t border-gray-100 px-4 py-3 text-sm hover:bg-gray-50">
                 <div>Folha de justificativas assinada faltando ({pendJust.ocorrencias} ocorrência(s))</div>
                 <div className="text-xs text-marca-600 underline">Imprimir ou guardar a folha</div>
               </Link>
@@ -239,15 +239,23 @@ export default function Painel() {
         <Cartao className="md:hidden">
           <div className="border-b border-gray-100 px-4 py-3 font-semibold">Outras áreas</div>
           <ul className="divide-y divide-gray-100">
-            {areas.filter((a) => !principaisCelular.includes(a.to)).map((a) => (
+            {areas.filter((a) => !principaisCelular.includes(a.to)).flatMap((a) => [
               <li key={a.to}>
                 <Link to={a.to} className="flex items-center gap-3 px-4 py-3 text-sm">
                   <a.icone size={18} className="text-gray-500" />
                   <span className="flex-1">{a.rotulo}</span>
                   {a.embreve && <span className="text-[10px] uppercase text-gray-400">em breve</span>}
                 </Link>
-              </li>
-            ))}
+              </li>,
+              ...(a.submenu ?? []).map((s) => (
+                <li key={s.to}>
+                  <Link to={s.to} className="flex items-center gap-3 py-3 pl-10 pr-4 text-sm">
+                    <s.icone size={16} className="text-gray-500" />
+                    <span className="flex-1">{s.rotulo}</span>
+                  </Link>
+                </li>
+              )),
+            ])}
           </ul>
         </Cartao>
       </div>

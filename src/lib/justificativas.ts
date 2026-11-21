@@ -61,6 +61,20 @@ export function descreverDia(dia: DiaPonto, todos: DiaPonto[]): string {
   return 'Horas faltando'
 }
 
+/**
+ * Minutos que ficaram faltando depois de compensar no mesmo dia:
+ * desconta as extras do dia e, com batidas completas, considera o tempo realmente trabalhado.
+ */
+export function minutosNaoCompensados(dia: DiaPonto): number {
+  let resto = dia.faltas - dia.extras
+  if (dia.cargaHoraria > 0 && dia.batidas.length >= 2 && dia.batidas.length % 2 === 0) {
+    let trabalhado = 0
+    for (let i = 0; i + 1 < dia.batidas.length; i += 2) trabalhado += Math.max(0, dia.batidas[i + 1] - dia.batidas[i])
+    resto = Math.min(resto, dia.cargaHoraria - trabalhado)
+  }
+  return Math.max(0, resto)
+}
+
 /** Ocorrências do mês, por data e nome */
 export function ocorrenciasDoMes(funcionarios: Funcionario[], pontos: CartaoPontoSalvo[], ausencias: Ausencia[], mes: string): Ocorrencia[] {
   const lista: Ocorrencia[] = []
@@ -73,7 +87,11 @@ export function ocorrenciasDoMes(funcionarios: Funcionario[], pontos: CartaoPont
       if (dia.faltas <= 0 || (dia.rotulo && dia.rotulo !== 'Falta')) continue
       const id = `${p.funcionarioId}-${dia.data}`
       tem.add(id)
-      lista.push({ id, funcionarioId: p.funcionarioId, data: dia.data, descricao: descreverDia(dia, p.dias), minutos: dia.faltas, batidas: dia.batidas, origem: 'cartao' })
+      const descricao = descreverDia(dia, p.dias)
+      // Atraso conta só pelo que não foi compensado no dia; saída antecipada e falta seguem como estão
+      const minutos = descricao === 'Atraso' || descricao === 'Horas faltando' ? minutosNaoCompensados(dia) : dia.faltas
+      if (minutos <= 0) continue
+      lista.push({ id, funcionarioId: p.funcionarioId, data: dia.data, descricao, minutos, batidas: dia.batidas, origem: 'cartao' })
     }
   }
 

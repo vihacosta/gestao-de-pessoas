@@ -49,6 +49,16 @@ describe('folha de justificativas', () => {
     expect(passaDaTolerancia({ id: 'x', funcionarioId: 'a', data: '2026-10-01', descricao: 'Falta justificada', origem: 'manual' }, 999)).toBe(true)
   })
 
+  it('atraso compensado no dia não entra; compensação parcial mostra só o que faltou', () => {
+    const compensado = { ...dia('2026-10-13', ['08:30', '12:00', '13:00', '18:18'], 30), extras: 30 }
+    const parcial = { ...dia('2026-10-14', ['08:40', '12:00', '13:00', '18:18'], 40), extras: 30 }
+    const semExtra = dia('2026-10-15', ['08:30', '12:00', '13:00', '18:18'], 30) // cumpriu a jornada pelas batidas
+    const cartao = { id: 'a-2026-10', funcionarioId: 'a', mes: '2026-10', dias: [normal(1), normal(2), normal(5), compensado, parcial, semExtra], saldoAnterior: 0, saldoTotal: 0 } as unknown as CartaoPontoSalvo
+    const manual: Ausencia = { id: '1', funcionarioId: 'a', tipo: 'atraso', inicio: '2026-10-13', fim: '2026-10-13', horas: 0.5 }
+    const lista = ocorrenciasDoMes([f('a', 'Ana')], [cartao], [manual], '2026-10')
+    expect(lista.map((o) => `${o.data.slice(8)} ${textoOcorrencia(o)}`)).toEqual(['14 Atraso (00:10)'])
+  })
+
   it('histórico junta todos os meses e conta atestados', () => {
     const pontos = [{ id: 'a-2026-10', funcionarioId: 'a', mes: '2026-10', dias, saldoAnterior: 0, saldoTotal: 0 } as unknown as CartaoPontoSalvo]
     const ausencias: Ausencia[] = [
