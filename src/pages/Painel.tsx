@@ -8,6 +8,7 @@ import { aniversarioEmpresa, brl, dataBR, decimoTerceiro, fgtsMensal, periodosAq
 import { hojeISO } from '../lib/hoje'
 import { ehMarcoPresente, proximosAniversariantes, textoMarco } from '../lib/aniversarios'
 import { precisaConferir } from '../lib/conferenciaAnual'
+import type { Justificativa } from '../lib/justificativas'
 import { useTabela } from '../lib/store'
 import type { Ausencia, CartaoPontoSalvo, DocumentoGuardado, Ferias, Funcionario } from '../lib/types'
 import { mesAnterior, nomeMes, pendenciasAssinatura } from './Holerites'
@@ -33,7 +34,8 @@ export default function Painel() {
   const { rows: pontos } = useTabela<CartaoPontoSalvo>('pontos')
   const pend = pendenciasAssinatura(todos, documentos, mesAssinar)
   const tolerancia = useConfig().toleranciaJustificativa ?? 0
-  const pendJust = pendenciaJustificativas(todos, pontos, ausencias, documentos, mesAssinar, tolerancia)
+  const { rows: justificativas } = useTabela<Justificativa>('justificativas')
+  const pendJust = pendenciaJustificativas(todos, pontos, ausencias, documentos, mesAssinar, tolerancia, justificativas)
   const faltaFolha = pendJust.ocorrencias > 0 && !pendJust.assinada
   const hoje = hojeISO()
   const ano = Number(hoje.slice(0, 4))

@@ -21,14 +21,14 @@ import { Botao, Cartao, Selecao, Selo, Vazio, cx, type CorSelo } from './ui'
 
 const opcoesTolerancia = [0, 10, 15, 20, 25, 30, 45, 60]
 
-/** "Só atrasos e saídas acima de X min" (fica salvo em Configurações) */
+/** "Só horas devidas acima de X min" (fica salvo em Configurações) */
 export function SeletorTolerancia() {
   const config = useConfig()
   const atual = config.toleranciaJustificativa ?? 0
   const opcoes = opcoesTolerancia.includes(atual) ? opcoesTolerancia : [...opcoesTolerancia, atual].sort((a, b) => a - b)
   return (
-    <label className="flex items-center gap-2 whitespace-nowrap text-sm text-gray-700" title="Faltas sempre aparecem. Atrasos e saídas antecipadas só quando passam deste tempo no dia.">
-      Atrasos acima de
+    <label className="flex items-center gap-2 whitespace-nowrap text-sm text-gray-700" title="Faltas sempre aparecem. Horas devidas só quando passam deste tempo no dia.">
+      Horas devidas acima de
       <div className="w-36"><Selecao
         value={atual}
         onChange={(e) => salvar('config', { ...config, toleranciaJustificativa: Number(e.target.value) })}
@@ -44,11 +44,13 @@ export function SeletorTolerancia() {
   )
 }
 
-const corCategoria: Record<Categoria, CorSelo> = { falta: 'vermelho', atestado: 'roxo', atraso: 'amarelo', saida: 'azul', outro: 'cinza' }
-const ordem: Categoria[] = ['falta', 'atestado', 'atraso', 'saida', 'outro']
+const corCategoria: Record<Categoria, CorSelo> = { falta: 'vermelho', atestado: 'roxo', horas: 'amarelo', banco: 'azul' }
+const ordem: Categoria[] = ['falta', 'atestado', 'horas', 'banco']
+/** Uso do banco não é ocorrência ruim: fica fora da tabela e do total por pessoa */
+const naTabela: Categoria[] = ['falta', 'atestado', 'horas']
 
 /**
- * Histórico de faltas, atestados, atrasos e saídas com o motivo de cada um.
+ * Histórico de faltas, atestados e horas devidas com o motivo de cada um.
  * Com `funcionarioId`, mostra só aquela pessoa (ficha do funcionário).
  */
 export function HistoricoOcorrencias({ funcionarioId }: { funcionarioId?: string }) {
@@ -74,11 +76,11 @@ export function HistoricoOcorrencias({ funcionarioId }: { funcionarioId?: string
   const totais = contar(doPeriodo)
 
   const nome = (id: string) => funcionarios.find((f) => f.id === id)?.nome ?? ''
-  const motivo = (o: Ocorrencia) => justificativas.find((j) => j.id === o.id)?.motivo ?? o.observacao ?? ''
+  const motivo = (o: Ocorrencia) => justificativas.find((j) => j.id === o.id)?.motivo || o.observacao || ''
 
   const porPessoa = useMemo(() => {
     const m = new Map<string, Ocorrencia[]>()
-    for (const o of doPeriodo) m.set(o.funcionarioId, [...(m.get(o.funcionarioId) ?? []), o])
+    for (const o of doPeriodo.filter((x) => !x.usoBanco)) m.set(o.funcionarioId, [...(m.get(o.funcionarioId) ?? []), o])
     return [...m.entries()].map(([id, l]) => ({ id, total: l.length, c: contar(l) })).sort((a, b) => b.total - a.total)
   }, [doPeriodo])
 
@@ -87,7 +89,7 @@ export function HistoricoOcorrencias({ funcionarioId }: { funcionarioId?: string
   return (
     <Cartao>
       <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3">
-        <span className="mr-auto font-semibold">Histórico de faltas e atrasos</span>
+        <span className="mr-auto font-semibold">Histórico de faltas e horas devidas</span>
         {!funcionarioId && <ImportarHistorico />}
         {!funcionarioId && (
           <div className="w-56"><Selecao value={pessoa} onChange={(e) => setPessoa(e.target.value)} className="py-1.5" aria-label="Pessoa">
@@ -109,24 +111,22 @@ export function HistoricoOcorrencias({ funcionarioId }: { funcionarioId?: string
 
       {/* Totais: clicar filtra a lista */}
       <div className="flex flex-wrap gap-2 px-4 py-3">
-        {ordem
-          .filter((c) => c !== 'outro' || totais.outro > 0)
-          .map((c) => (
-            <button
-              key={c}
-              onClick={() => setTipo(tipo === c ? '' : c)}
-              className={cx(
-                'rounded-lg border px-3 py-2 text-left transition',
-                tipo === c ? 'border-marca-500 bg-marca-50 ring-2 ring-marca-100' : 'border-gray-200 hover:bg-gray-50',
-              )}
-            >
-              <div className="text-xl font-bold">{totais[c]}</div>
-              <div className="text-xs text-gray-500">{nomesCategoria[c]}</div>
-            </button>
-          ))}
+        {ordem.map((c) => (
+          <button
+            key={c}
+            onClick={() => setTipo(tipo === c ? '' : c)}
+            className={cx(
+              'rounded-lg border px-3 py-2 text-left transition',
+              tipo === c ? 'border-marca-500 bg-marca-50 ring-2 ring-marca-100' : 'border-gray-200 hover:bg-gray-50',
+            )}
+          >
+            <div className="text-xl font-bold">{totais[c]}</div>
+            <div className="text-xs text-gray-500">{nomesCategoria[c]}</div>
+          </button>
+        ))}
       </div>
       <p className="px-4 pb-3 text-xs text-gray-500">
-        {tolerancia > 0 ? `Atrasos e saídas de até ${tolerancia} minutos não entram na conta. ` : ''}Clique num número para ver só aquele tipo.
+        {tolerancia > 0 ? `Horas devidas de até ${tolerancia} minutos no dia não entram na conta. ` : ''}Clique num número para ver só aquele tipo.
       </p>
 
       {!funcionarioId && !pessoa && porPessoa.length > 0 && (
@@ -135,7 +135,7 @@ export function HistoricoOcorrencias({ funcionarioId }: { funcionarioId?: string
             <thead className="text-left text-xs text-gray-500">
               <tr>
                 <th className="px-4 py-2 font-medium">Pessoa</th>
-                {ordem.slice(0, 4).map((c) => (
+                {naTabela.map((c) => (
                   <th key={c} className="px-3 py-2 text-center font-medium">
                     {nomesCategoria[c]}
                   </th>
@@ -147,7 +147,7 @@ export function HistoricoOcorrencias({ funcionarioId }: { funcionarioId?: string
               {porPessoa.map((p) => (
                 <tr key={p.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setPessoa(p.id)}>
                   <td className="px-4 py-2 font-medium">{nome(p.id)}</td>
-                  {ordem.slice(0, 4).map((c) => (
+                  {naTabela.map((c) => (
                     <td key={c} className={cx('px-3 py-2 text-center', p.c[c] === 0 && 'text-gray-300')}>
                       {p.c[c]}
                     </td>
@@ -176,7 +176,7 @@ export function HistoricoOcorrencias({ funcionarioId }: { funcionarioId?: string
                   )}
                   <Selo cor={corCategoria[categoria(o)]}>{textoOcorrencia(o)}</Selo>
                 </div>
-                <span className={m ? '' : 'text-gray-400'}>{m || 'Sem motivo registrado'}</span>
+                <span className={m ? '' : 'text-gray-400'}>{m || (o.usoBanco ? 'Saldo do banco de horas' : 'Sem motivo registrado')}</span>
               </li>
             )
           })}

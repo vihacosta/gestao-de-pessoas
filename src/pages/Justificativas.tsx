@@ -17,8 +17,8 @@ import { mesAnterior, nomeMes } from './Holerites'
 export const COLETIVO = 'coletivo'
 
 /** Folha assinada do mês e quantas ocorrências o mês tem */
-export function pendenciaJustificativas(funcionarios: Funcionario[], pontos: CartaoPontoSalvo[], ausencias: Ausencia[], documentos: DocumentoGuardado[], mes: string, tolerancia = 0) {
-  const ocorrencias = ocorrenciasDoMes(funcionarios, pontos, ausencias, mes).filter((o) => passaDaTolerancia(o, tolerancia)).length
+export function pendenciaJustificativas(funcionarios: Funcionario[], pontos: CartaoPontoSalvo[], ausencias: Ausencia[], documentos: DocumentoGuardado[], mes: string, tolerancia = 0, justificativas: Justificativa[] = []) {
+  const ocorrencias = ocorrenciasDoMes(funcionarios, pontos, ausencias, mes, justificativas).filter((o) => !o.usoBanco && passaDaTolerancia(o, tolerancia)).length
   const assinada = documentos.some((x) => x.categoria === 'justificativas' && x.mes === mes)
   return { ocorrencias, assinada }
 }
@@ -43,6 +43,13 @@ function Motivo({ o, j }: { o: Ocorrencia; j?: Justificativa }) {
   )
 }
 
+/** Marca ou desfaz o uso do banco de horas, sem perder o motivo já digitado */
+function alternarBanco(o: Ocorrencia, j?: Justificativa) {
+  if (!o.usoBanco) return salvar<Justificativa>('justificativas', { id: o.id, funcionarioId: o.funcionarioId, data: o.data, motivo: j?.motivo ?? '', usoBanco: true })
+  if (!j?.motivo) return remover('justificativas', o.id)
+  return salvar<Justificativa>('justificativas', { id: o.id, funcionarioId: o.funcionarioId, data: o.data, motivo: j.motivo })
+}
+
 export default function Justificativas() {
   const [params, setParams] = useSearchParams()
   const mes = params.get('mes') ?? mesAnterior()
@@ -56,13 +63,15 @@ export default function Justificativas() {
   const historico = params.get('ver') === 'historico'
   const tolerancia = useConfig().toleranciaJustificativa ?? 0
   const [verMenores, setVerMenores] = useState(false)
-  const doMes = useMemo(() => ocorrenciasDoMes(funcionarios, pontos, ausencias, mes), [funcionarios, pontos, ausencias, mes])
-  const acima = doMes.filter((o) => passaDaTolerancia(o, tolerancia))
-  const menores = doMes.length - acima.length
-  const ocorrencias = verMenores ? doMes : acima
+  const doMes = useMemo(() => ocorrenciasDoMes(funcionarios, pontos, ausencias, mes, justificativas), [funcionarios, pontos, ausencias, mes, justificativas])
+  const usoBanco = doMes.filter((o) => o.usoBanco)
+  const paraFolha = doMes.filter((o) => !o.usoBanco)
+  const acima = paraFolha.filter((o) => passaDaTolerancia(o, tolerancia))
+  const menores = paraFolha.length - acima.length
+  const ocorrencias = verMenores ? paraFolha : acima
   const nome = (id: string) => funcionarios.find((f) => f.id === id)?.nome ?? ''
   const just = (o: Ocorrencia) => justificativas.find((j) => j.id === o.id)
-  const motivo = (o: Ocorrencia) => just(o)?.motivo ?? o.observacao ?? ''
+  const motivo = (o: Ocorrencia) => just(o)?.motivo || o.observacao || ''
   const folhas = documentos.filter((x) => x.categoria === 'justificativas' && x.mes === mes).sort((a, b) => a.enviadoEm.localeCompare(b.enviadoEm))
   const temCartao = pontos.some((p) => p.mes === mes)
   const comMotivo = ocorrencias.filter((o) => motivo(o)).length
@@ -86,7 +95,7 @@ export default function Justificativas() {
     <>
       <Cabecalho
         titulo="Ocorrências"
-        subtitulo="Faltas, atrasos não compensados no dia e saídas antecipadas do mês, para cada pessoa escrever o motivo e assinar"
+        subtitulo="Faltas e horas devidas no dia (atraso ou saída antes do horário sem compensar), para cada pessoa escrever o motivo e assinar"
       />
 
       <div className="mb-4 flex gap-1 border-b border-gray-200">
@@ -186,15 +195,15 @@ export default function Justificativas() {
             </span>
             {menores > 0 && (
               <button className="text-marca-700 underline" onClick={() => setVerMenores(!verMenores)}>
-                {verMenores ? `Esconder as ${menores} de até ${tolerancia} min` : `${menores} atraso(s)/saída(s) de até ${tolerancia} min não aparecem · mostrar`}
+                {verMenores ? `Esconder as ${menores} de até ${tolerancia} min` : `${menores} dia(s) com horas devidas de até ${tolerancia} min não aparecem · mostrar`}
               </button>
             )}
           </div>
         )}
-        {!carregando && ocorrencias.length === 0 && <Vazio>Nenhuma falta, atraso ou saída antecipada neste mês.</Vazio>}
+        {!carregando && ocorrencias.length === 0 && <Vazio>Nenhuma falta ou hora devida neste mês.</Vazio>}
         <ul className="divide-y divide-gray-100">
           {ocorrencias.map((o) => (
-            <li key={o.id} className="grid gap-2 px-4 py-3 md:grid-cols-[4rem_1fr_1fr_1.4fr] md:items-center">
+            <li key={o.id} className="grid gap-2 px-4 py-3 md:grid-cols-[4rem_1fr_1fr_1.4fr_auto] md:items-center">
               <span className="text-sm font-medium">{format(d(o.data), 'dd/MM')}</span>
               <Link to={`/funcionarios/${o.funcionarioId}`} className="text-sm font-medium hover:underline">
                 {nome(o.funcionarioId)}
@@ -206,15 +215,45 @@ export default function Justificativas() {
                 </div>
               </div>
               <Motivo o={o} j={just(o)} />
+              <Botao variante="secundario" className="whitespace-nowrap px-2.5 py-1.5 text-xs" onClick={() => alternarBanco(o, just(o))}>
+                Usou banco de horas
+              </Botao>
             </li>
           ))}
         </ul>
       </Cartao>
+
+      {usoBanco.length > 0 && (
+        <Cartao className="mt-4">
+          <div className="border-b border-gray-100 px-4 py-3">
+            <span className="font-semibold">Uso do banco de horas</span>
+            <span className="ml-2 text-xs text-gray-500">{usoBanco.length} dia(s) · não contam como falta nem horas devidas e não vão para a folha</span>
+          </div>
+          <ul className="divide-y divide-gray-100">
+            {usoBanco.map((o) => (
+              <li key={o.id} className="grid gap-2 px-4 py-3 md:grid-cols-[4rem_1fr_1fr_1.4fr_auto] md:items-center">
+                <span className="text-sm font-medium">{format(d(o.data), 'dd/MM')}</span>
+                <Link to={`/funcionarios/${o.funcionarioId}`} className="text-sm font-medium hover:underline">
+                  {nome(o.funcionarioId)}
+                </Link>
+                <div className="text-sm">
+                  <Selo cor="azul">{textoOcorrencia(o)}</Selo>
+                  {o.batidas?.length ? <div className="mt-0.5 text-xs text-gray-500">Batidas: {o.batidas.map(hhmm).join(' ')}</div> : null}
+                </div>
+                <span className="text-sm text-gray-500">{motivo(o)}</span>
+                <Botao variante="fantasma" className="whitespace-nowrap px-2.5 py-1.5 text-xs" onClick={() => alternarBanco(o, just(o))}>
+                  Desfazer
+                </Botao>
+              </li>
+            ))}
+          </ul>
+        </Cartao>
+      )}
+
       <p className="mt-3 text-xs text-gray-500">
         Os motivos digitados aqui já saem impressos na folha; os que ficarem em branco, a pessoa escreve à mão. Atestados, férias e licenças não entram na folha.
-        "Atraso" e "saída antecipada" são deduzidos comparando as batidas com o horário habitual da pessoa no mês.
-        Atraso compensado no mesmo dia não aparece; se a compensação foi parcial, aparece só o tempo que ficou faltando.
-        Faltas sempre aparecem; atrasos e saídas só quando passam do tempo escolhido (o bônus por assiduidade continua contando tudo).
+        "Horas devidas" junta atraso, saída antes do horário e volta tarde do almoço. O que foi compensado no mesmo dia não aparece; se a compensação foi parcial, aparece só o tempo que ficou faltando.
+        Faltas sempre aparecem; horas devidas só quando passam do tempo escolhido (o bônus por assiduidade continua contando tudo).
       </p>
       </>
       )}

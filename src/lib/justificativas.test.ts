@@ -14,10 +14,16 @@ const f = (id: string, nome: string) => ({ id, nome, cpf: '', cargo: '', tipo: '
 describe('folha de justificativas', () => {
   const dias = [normal(1), normal(2), normal(5), dia('2026-10-06', ['08:40', '12:00', '13:00', '17:48'], 40), dia('2026-10-07', ['08:00', '12:00', '13:00', '16:00'], 108), dia('2026-10-08', [], 528, 'Falta'), dia('2026-10-09', [], 528, 'Atestado')]
 
-  it('deduz atraso, saída antecipada e falta pelas batidas', () => {
-    expect(descreverDia(dias[3], dias)).toBe('Atraso')
-    expect(descreverDia(dias[4], dias)).toBe('Saída antecipada')
-    expect(descreverDia(dias[5], dias)).toBe('Falta')
+  it('atraso e saída antecipada viram horas devidas; dia sem batidas é falta', () => {
+    expect(descreverDia(dias[3])).toBe('Horas devidas')
+    expect(descreverDia(dias[4])).toBe('Horas devidas')
+    expect(descreverDia(dias[5])).toBe('Falta')
+  })
+
+  it('atraso e saída no mesmo dia viram uma ocorrência só, com o total devido', () => {
+    const ambos = { ...dia('2026-09-21', ['08:53', '11:58', '13:02', '18:07'], 50), cargaHoraria: 540 } // jornada 08:00-18:00
+    const cartao = { id: 'a-2026-09', funcionarioId: 'a', mes: '2026-09', dias: [ambos], saldoAnterior: 0, saldoTotal: 0 } as unknown as CartaoPontoSalvo
+    expect(ocorrenciasDoMes([f('a', 'Ana')], [cartao], [], '2026-09').map(textoOcorrencia)).toEqual(['Horas devidas (00:50)'])
   })
 
   it('junta cartão e lançamentos à mão sem repetir o dia e ignora atestado', () => {
@@ -30,8 +36,8 @@ describe('folha de justificativas', () => {
     const lista = ocorrenciasDoMes([f('a', 'Ana'), f('b', 'Bia')], pontos, ausencias, '2026-10')
     expect(lista.map((o) => `${o.data.slice(8)} ${o.funcionarioId} ${textoOcorrencia(o)}`)).toEqual([
       '05 b Falta',
-      '06 a Atraso (00:40)',
-      '07 a Saída antecipada (01:48)',
+      '06 a Horas devidas (00:40)',
+      '07 a Horas devidas (01:48)',
       '08 a Falta',
     ])
     expect(lista[0].observacao).toBe('Ônibus')
@@ -41,9 +47,9 @@ describe('folha de justificativas', () => {
     const pontos = [{ id: 'a-2026-10', funcionarioId: 'a', mes: '2026-10', dias, saldoAnterior: 0, saldoTotal: 0 } as unknown as CartaoPontoSalvo]
     const lista = ocorrenciasDoMes([f('a', 'Ana')], pontos, [], '2026-10')
     const com = (t: number) => lista.filter((o) => passaDaTolerancia(o, t)).map(textoOcorrencia)
-    expect(com(0)).toEqual(['Atraso (00:40)', 'Saída antecipada (01:48)', 'Falta'])
-    expect(com(40)).toEqual(['Saída antecipada (01:48)', 'Falta'])
-    expect(com(39)).toEqual(['Atraso (00:40)', 'Saída antecipada (01:48)', 'Falta'])
+    expect(com(0)).toEqual(['Horas devidas (00:40)', 'Horas devidas (01:48)', 'Falta'])
+    expect(com(40)).toEqual(['Horas devidas (01:48)', 'Falta'])
+    expect(com(39)).toEqual(['Horas devidas (00:40)', 'Horas devidas (01:48)', 'Falta'])
     expect(com(120)).toEqual(['Falta'])
     // falta lançada à mão sem horas sempre entra
     expect(passaDaTolerancia({ id: 'x', funcionarioId: 'a', data: '2026-10-01', descricao: 'Falta justificada', origem: 'manual' }, 999)).toBe(true)
@@ -56,7 +62,7 @@ describe('folha de justificativas', () => {
     const cartao = { id: 'a-2026-10', funcionarioId: 'a', mes: '2026-10', dias: [normal(1), normal(2), normal(5), compensado, parcial, semExtra], saldoAnterior: 0, saldoTotal: 0 } as unknown as CartaoPontoSalvo
     const manual: Ausencia = { id: '1', funcionarioId: 'a', tipo: 'atraso', inicio: '2026-10-13', fim: '2026-10-13', horas: 0.5 }
     const lista = ocorrenciasDoMes([f('a', 'Ana')], [cartao], [manual], '2026-10')
-    expect(lista.map((o) => `${o.data.slice(8)} ${textoOcorrencia(o)}`)).toEqual(['14 Atraso (00:10)'])
+    expect(lista.map((o) => `${o.data.slice(8)} ${textoOcorrencia(o)}`)).toEqual(['14 Horas devidas (00:10)'])
   })
 
   it('histórico junta todos os meses e conta atestados', () => {
@@ -67,6 +73,19 @@ describe('folha de justificativas', () => {
     ]
     const h = historicoOcorrencias([f('a', 'Ana')], pontos, ausencias)
     expect(h[0].data).toBe('2026-10-09') // mais recente primeiro
-    expect(contar(h)).toEqual({ falta: 2, atraso: 1, saida: 1, atestado: 3, outro: 0 })
+    expect(contar(h)).toEqual({ falta: 2, atestado: 3, horas: 2, banco: 0 })
+  })
+
+  it('uso do banco de horas sai de faltas e horas devidas, mesmo abaixo da tolerância continua visível', () => {
+    const pontos = [{ id: 'a-2026-10', funcionarioId: 'a', mes: '2026-10', dias, saldoAnterior: 0, saldoTotal: 0 } as unknown as CartaoPontoSalvo]
+    const marcas = [
+      { id: 'a-2026-10-06', funcionarioId: 'a', data: '2026-10-06', motivo: '', usoBanco: true },
+      { id: 'a-2026-10-08', funcionarioId: 'a', data: '2026-10-08', motivo: '', usoBanco: true },
+    ]
+    const lista = ocorrenciasDoMes([f('a', 'Ana')], pontos, [], '2026-10', marcas)
+    expect(lista.map(textoOcorrencia)).toEqual(['Uso do banco de horas (00:40)', 'Horas devidas (01:48)', 'Uso do banco de horas (08:48)'])
+    expect(contar(lista)).toEqual({ falta: 0, atestado: 0, horas: 1, banco: 2 })
+    expect(passaDaTolerancia(lista[0], 120)).toBe(true)
+    expect(contar(historicoOcorrencias([f('a', 'Ana')], pontos, [], marcas))).toEqual({ falta: 0, atestado: 1, horas: 1, banco: 2 })
   })
 })

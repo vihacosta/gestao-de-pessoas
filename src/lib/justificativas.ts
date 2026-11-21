@@ -1,5 +1,5 @@
 /**
- * Folha de justificativas: lista as faltas, atrasos e saídas antecipadas do mês
+ * Folha de justificativas: lista as faltas e horas devidas (atrasos e saídas antecipadas) do mês
  * (do cartão ponto importado e das ocorrências lançadas à mão) para cada pessoa escrever o motivo e assinar.
  */
 import { addDays, format } from 'date-fns'
@@ -16,6 +16,8 @@ export interface Justificativa {
   /** Só nos registros importados da planilha antiga (id começa com "hist-"): Falta, Atestado, Atraso, Atraso no almoço, Saída antecipada */
   descricao?: string
   origem?: 'planilha'
+  /** A pessoa usou o banco de horas: não conta como falta nem horas devidas e não vai para a folha */
+  usoBanco?: boolean
 }
 
 export interface Ocorrencia {
@@ -29,37 +31,22 @@ export interface Ocorrencia {
   origem: 'cartao' | 'manual' | 'planilha'
   /** Observação da ocorrência lançada à mão, usada como motivo sugerido */
   observacao?: string
+  usoBanco?: boolean
 }
 
-const TOLERANCIA = 10 // minutos
+/** Atraso, saída antecipada e volta tarde do almoço: no fim, a pessoa fica devendo horas */
+export const HORAS_DEVIDAS = 'Horas devidas'
 
 /** Tipos lançados à mão que entram na folha (atestado e licenças já têm comprovante) */
 export const tiposNaFolha: Partial<Record<TipoAusencia, string>> = {
-  atraso: 'Atraso',
-  saida_antecipada: 'Saída antecipada',
+  atraso: HORAS_DEVIDAS,
+  saida_antecipada: HORAS_DEVIDAS,
   falta_injustificada: 'Falta',
   falta_justificada: 'Falta justificada',
 }
 
-const mediana = (v: number[]) => {
-  if (!v.length) return undefined
-  const s = [...v].sort((a, b) => a - b)
-  return s[Math.floor(s.length / 2)]
-}
-
-/** Classifica o dia comparando as batidas com o horário habitual da pessoa naquele mês */
-export function descreverDia(dia: DiaPonto, todos: DiaPonto[]): string {
-  if (dia.rotulo === 'Falta' || dia.batidas.length === 0) return 'Falta'
-  const normais = todos.filter((x) => !x.rotulo && x.faltas === 0 && x.batidas.length >= 2)
-  const entrada = mediana(normais.map((x) => x.batidas[0]))
-  const saida = mediana(normais.map((x) => x.batidas[x.batidas.length - 1]))
-  const atrasou = entrada != null && dia.batidas[0] > entrada + TOLERANCIA
-  const saiuCedo = saida != null && dia.batidas.length >= 2 && dia.batidas[dia.batidas.length - 1] < saida - TOLERANCIA
-  if (atrasou && saiuCedo) return 'Atraso e saída antecipada'
-  if (atrasou) return 'Atraso'
-  if (saiuCedo) return 'Saída antecipada'
-  return 'Horas faltando'
-}
+/** Dia sem batidas é falta; com batidas, o que faltou são horas devidas */
+export const descreverDia = (dia: DiaPonto) => (dia.rotulo === 'Falta' || dia.batidas.length === 0 ? 'Falta' : HORAS_DEVIDAS)
 
 /**
  * Minutos que ficaram faltando depois de compensar no mesmo dia:
@@ -76,8 +63,9 @@ export function minutosNaoCompensados(dia: DiaPonto): number {
 }
 
 /** Ocorrências do mês, por data e nome */
-export function ocorrenciasDoMes(funcionarios: Funcionario[], pontos: CartaoPontoSalvo[], ausencias: Ausencia[], mes: string): Ocorrencia[] {
+export function ocorrenciasDoMes(funcionarios: Funcionario[], pontos: CartaoPontoSalvo[], ausencias: Ausencia[], mes: string, justificativas: Justificativa[] = []): Ocorrencia[] {
   const lista: Ocorrencia[] = []
+  const noBanco = new Set(justificativas.filter((j) => j.usoBanco).map((j) => j.id))
   const ids = new Set(funcionarios.map((f) => f.id))
   const tem = new Set<string>()
 
@@ -87,9 +75,9 @@ export function ocorrenciasDoMes(funcionarios: Funcionario[], pontos: CartaoPont
       if (dia.faltas <= 0 || (dia.rotulo && dia.rotulo !== 'Falta')) continue
       const id = `${p.funcionarioId}-${dia.data}`
       tem.add(id)
-      const descricao = descreverDia(dia, p.dias)
-      // Atraso conta só pelo que não foi compensado no dia; saída antecipada e falta seguem como estão
-      const minutos = descricao === 'Atraso' || descricao === 'Horas faltando' ? minutosNaoCompensados(dia) : dia.faltas
+      const descricao = descreverDia(dia)
+      // Horas devidas contam só pelo que não foi compensado no próprio dia
+      const minutos = descricao === HORAS_DEVIDAS ? minutosNaoCompensados(dia) : dia.faltas
       if (minutos <= 0) continue
       lista.push({ id, funcionarioId: p.funcionarioId, data: dia.data, descricao, minutos, batidas: dia.batidas, origem: 'cartao' })
     }
@@ -116,31 +104,31 @@ export function ocorrenciasDoMes(funcionarios: Funcionario[], pontos: CartaoPont
     }
   }
 
+  for (const o of lista) if (noBanco.has(o.id)) o.usoBanco = true
   const nome = new Map(funcionarios.map((f) => [f.id, f.nome]))
   return lista.sort((a, b) => a.data.localeCompare(b.data) || (nome.get(a.funcionarioId) ?? '').localeCompare(nome.get(b.funcionarioId) ?? ''))
 }
 
-/** Falta (ou ocorrência sem minutos, lançada à mão como dia inteiro) sempre entra; atraso/saída só se passar de `tolerancia` minutos */
+/** Falta (ou ocorrência sem minutos, lançada à mão como dia inteiro) sempre entra; horas devidas só se passarem de `tolerancia` minutos */
 export const passaDaTolerancia = (o: Ocorrencia, tolerancia: number) =>
-  o.minutos == null || o.descricao.startsWith('Falta') || o.minutos > tolerancia
+  !!o.usoBanco || o.minutos == null || o.descricao.startsWith('Falta') || o.minutos > tolerancia
 
-export type Categoria = 'falta' | 'atraso' | 'saida' | 'atestado' | 'outro'
+export type Categoria = 'falta' | 'atestado' | 'horas' | 'banco'
+
+export const USO_BANCO = 'Uso do banco de horas'
 
 export const nomesCategoria: Record<Categoria, string> = {
   falta: 'Faltas',
-  atraso: 'Atrasos',
-  saida: 'Saídas antecipadas',
   atestado: 'Atestados',
-  outro: 'Horas faltando',
+  horas: HORAS_DEVIDAS,
+  banco: USO_BANCO,
 }
 
-/** "Atraso e saída antecipada" conta como atraso */
 export function categoria(o: Ocorrencia): Categoria {
+  if (o.usoBanco) return 'banco'
   if (o.descricao === 'Atestado') return 'atestado'
   if (o.descricao.startsWith('Falta')) return 'falta'
-  if (o.descricao.startsWith('Atraso')) return 'atraso'
-  if (o.descricao === 'Saída antecipada') return 'saida'
-  return 'outro'
+  return 'horas'
 }
 
 /**
@@ -150,7 +138,7 @@ export function categoria(o: Ocorrencia): Categoria {
 export function historicoOcorrencias(funcionarios: Funcionario[], pontos: CartaoPontoSalvo[], ausencias: Ausencia[], justificativas: Justificativa[] = []): Ocorrencia[] {
   const meses = new Set<string>(pontos.map((p) => p.mes))
   for (const a of ausencias) for (let dt = d(a.inicio); iso(dt) <= a.fim; dt = addDays(dt, 1)) meses.add(iso(dt).slice(0, 7))
-  const lista = [...meses].flatMap((m) => ocorrenciasDoMes(funcionarios, pontos, ausencias, m))
+  const lista = [...meses].flatMap((m) => ocorrenciasDoMes(funcionarios, pontos, ausencias, m, justificativas))
   const tem = new Set(lista.map((o) => o.id))
   const ids = new Set(funcionarios.map((f) => f.id))
   const incluir = (o: Ocorrencia) => {
@@ -172,25 +160,28 @@ export function historicoOcorrencias(funcionarios: Funcionario[], pontos: Cartao
     if (j.origem !== 'planilha' || !j.descricao || !ids.has(j.funcionarioId)) continue
     const jaTem = porDia.get(`${j.funcionarioId}-${j.data}`)
     if (jaTem) {
-      if (!jaTem.observacao && !justificativas.some((x) => x.id === jaTem.id)) jaTem.observacao = j.motivo
+      if (!jaTem.observacao && !justificativas.some((x) => x.id === jaTem.id && x.motivo)) jaTem.observacao = j.motivo
       continue
     }
-    lista.push({ id: j.id, funcionarioId: j.funcionarioId, data: j.data, descricao: j.descricao, origem: 'planilha' })
+    // Atraso e saída da planilha antiga aparecem como horas devidas (o registro original não muda)
+    const descricao = j.descricao === 'Atestado' || j.descricao.startsWith('Falta') ? j.descricao : HORAS_DEVIDAS
+    lista.push({ id: j.id, funcionarioId: j.funcionarioId, data: j.data, descricao, origem: 'planilha' })
   }
   return lista.sort((a, b) => b.data.localeCompare(a.data))
 }
 
 /** Quantas ocorrências de cada tipo */
 export function contar(lista: Ocorrencia[]): Record<Categoria, number> {
-  const r: Record<Categoria, number> = { falta: 0, atraso: 0, saida: 0, atestado: 0, outro: 0 }
+  const r: Record<Categoria, number> = { falta: 0, atestado: 0, horas: 0, banco: 0 }
   for (const o of lista) r[categoria(o)]++
   return r
 }
 
 export const hhmm = (min: number) => `${String(Math.floor(Math.abs(min) / 60)).padStart(2, '0')}:${String(Math.abs(min) % 60).padStart(2, '0')}`
 
-/** "Atraso (00:25)"; falta de dia inteiro fica só "Falta" */
+/** "Horas devidas (00:25)"; falta de dia inteiro fica só "Falta" */
 export const textoOcorrencia = (o: Ocorrencia) => {
+  if (o.usoBanco) return o.minutos != null ? `${USO_BANCO} (${hhmm(o.minutos)})` : USO_BANCO
   const diaInteiro = o.descricao === 'Falta' && (o.minutos == null || o.minutos >= 420)
   return o.minutos != null && !diaInteiro ? `${o.descricao} (${hhmm(o.minutos)})` : o.descricao
 }
@@ -217,7 +208,7 @@ td:nth-child(1) { width: 48px } td:nth-child(2) { width: 22% } td:nth-child(3) {
 .bat { font-size: 8pt; color: #444; margin-top: 2px }
 </style></head><body>
 <h1>${esc(args.titulo)}</h1>
-<p>Escreva o motivo de cada falta, atraso ou saída antecipada e assine. Ao assinar, declaro que a informação é verdadeira.</p>
+<p>Escreva o motivo de cada falta ou horas devidas e assine. Ao assinar, declaro que a informação é verdadeira.</p>
 <table><thead><tr><th>Data</th><th>Funcionário</th><th>Ocorrência</th><th>Motivo</th><th>Assinatura</th></tr></thead><tbody>${linhas}${brancas}</tbody></table>
 <script>window.onload = () => { window.print() }</script>
 </body></html>`

@@ -67,7 +67,7 @@ describe('planilha antiga de atrasos e faltas', () => {
     const f = { id: 'a', nome: 'Ana', cpf: '', cargo: '', tipo: 'clt', dataAdmissao: '2020-01-01', salarios: [] } as Funcionario
     const ausencias = [{ id: 'x', funcionarioId: 'a', tipo: 'falta_injustificada' as const, inicio: '2026-10-06', fim: '2026-10-06' }]
     const h = historicoOcorrencias([f], [], ausencias, reg)
-    expect(contar(h)).toEqual({ falta: 1, atraso: 1, saida: 1, atestado: 0, outro: 0 })
+    expect(contar(h)).toEqual({ falta: 1, atestado: 0, horas: 2, banco: 0 })
     // o motivo da planilha vai para o dia que já existia
     expect(h.find((o) => o.data === '2026-10-06')?.observacao).toBe('ÔNIBUS')
   })
