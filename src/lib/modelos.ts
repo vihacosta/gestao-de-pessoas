@@ -169,8 +169,9 @@ export function dadosFuncionario(f: Funcionario, dataDoc: string): Record<string
     ctps: ctpsTexto(f),
     pis: f.pis ?? '',
     cargo: f.cargo,
-    salario: brl(sal).replace('R$', '').trim(),
-    salario_extenso: reaisExtenso(sal),
+    // sem permissão para ver salários, o campo sai em branco (e não como R$ 0,00)
+    salario: f.salarios.length ? brl(sal).replace('R$', '').trim() : '',
+    salario_extenso: f.salarios.length ? reaisExtenso(sal) : '',
     data_admissao: dataBR(f.dataAdmissao),
     data_admissao_extenso: dataExtenso(f.dataAdmissao),
     data_nascimento: f.dataNascimento ? dataBR(f.dataNascimento) : '',

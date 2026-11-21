@@ -1,6 +1,7 @@
 import { AlertTriangle, Calculator, Download, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../auth'
 import type { Aquisicao } from '../lib/aquisicoes'
 import { salvarNoComputador } from '../lib/arquivos'
 import { brl, dataBR } from '../lib/clt'
@@ -17,6 +18,7 @@ import { Botao, Campo, Entrada, Modal, Selecao } from './ui'
 
 /** Gera os documentos do desligamento. Não altera o cadastro: a data de desligamento é registrada em Editar. */
 export function DesligamentoFuncionario({ f, config, aberto, onFechar }: { f: Funcionario; config: ConfigEmpresa; aberto: boolean; onFechar: () => void }) {
+  const { pode } = useAuth()
   const motivos = MOTIVOS.filter((m) => m.tipo === f.tipo)
   const [motivo, setMotivo] = useState<MotivoDesligamento>(motivos[0].id)
   const [data, setData] = useState(hojeISO())
@@ -154,7 +156,7 @@ export function DesligamentoFuncionario({ f, config, aberto, onFechar }: { f: Fu
           ))}
         </dl>
 
-        {!r.erro && (
+        {!r.erro && pode('valores') && (
           <div className="rounded-lg border border-gray-200">
             <button type="button" onClick={() => setVerEstimativa((v) => !v)} className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-sm font-semibold" aria-expanded={verEstimativa}>
               <span className="flex items-center gap-2">

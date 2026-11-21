@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { supabase } from './lib/store'
-import { meuUsuario, mensagemErroAuth } from './lib/usuarios'
+import { ehEmailInterno, nivelDe, podeGravar, type Modulo, type NivelPermissao, type Permissoes } from './lib/permissoes'
+import { definirRegraEscrita, supabase } from './lib/store'
+import { emailDoLogin, meuUsuario, mensagemErroAuth } from './lib/usuarios'
 
 interface Auth {
   logado: boolean
@@ -9,6 +10,10 @@ interface Auth {
   nome: string | null
   /** Pode cadastrar e remover usuários (no modo demonstração, sempre) */
   admin: boolean
+  /** O que a pessoa pode fazer num módulo: null, "ver" ou "editar" */
+  nivel: (m: Modulo) => NivelPermissao | null
+  pode: (m: Modulo) => boolean
+  podeAlterar: (m: Modulo) => boolean
   /** Mensagem para mostrar na tela de login (ex.: acesso removido) */
   aviso: string | null
   /** Abriu o link de "esqueci minha senha": precisa definir uma nova */
@@ -27,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null)
   const [nome, setNome] = useState<string | null>(null)
   const [admin, setAdmin] = useState(false)
+  const [permissoes, setPermissoes] = useState<Permissoes>({})
   const [carregando, setCarregando] = useState(true)
   const [aviso, setAviso] = useState<string | null>(null)
   const [recuperandoSenha, setRecuperandoSenha] = useState(false)
@@ -55,8 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setEmail(null)
         } else {
           setEmail(e)
+          const minhas = u.permissoes ?? {}
           setNome(u.nome)
           setAdmin(u.admin)
+          setPermissoes(minhas)
+          definirRegraEscrita((t, r, op) => podeGravar(minhas, u.admin, t, r as { categoria?: never } | undefined, op), !u.admin)
         }
       } catch {
         setEmail(e) // sem conexão para conferir: deixa entrar, o banco protege os dados
@@ -79,20 +88,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setEmail(e || 'demonstracao')
       return null
     }
-    const { error } = await supabase.auth.signInWithPassword({ email: e.trim(), password: senha })
-    return error ? mensagemErroAuth(error.message) : null
+    try {
+      const conta = await emailDoLogin(e)
+      if (!conta) return 'Usuário, e-mail ou senha incorretos.'
+      const { error } = await supabase.auth.signInWithPassword({ email: conta, password: senha })
+      return error ? mensagemErroAuth(error.message) : null
+    } catch (err) {
+      return mensagemErroAuth(String((err as Error).message ?? err))
+    }
   }
 
   async function criarConta(n: string, e: string, senha: string) {
     setAviso(null)
-    const { data, error } = await supabase!.auth.signUp({ email: e.trim().toLowerCase(), password: senha, options: { data: { nome: n.trim() } } })
+    const conta = await emailDoLogin(e).catch(() => null)
+    if (!conta) return 'Este usuário não tem acesso ao sistema. Peça para quem administra cadastrar você em Usuários.'
+    const { data, error } = await supabase!.auth.signUp({ email: conta, password: senha, options: { data: { nome: n.trim() } } })
     if (error) return mensagemErroAuth(error.message)
     if (!data.session) return 'Conta criada, mas o Supabase pediu confirmação por e-mail. Desligue "Confirm email" em Authentication > Sign In / Providers > Email.'
     return null
   }
 
   async function esqueciSenha(e: string) {
-    const { error } = await supabase!.auth.resetPasswordForEmail(e.trim(), { redirectTo: window.location.origin })
+    const conta = await emailDoLogin(e).catch(() => null)
+    if (!conta) return null // não revela se o usuário existe
+    if (ehEmailInterno(conta)) return 'Este usuário não tem e-mail cadastrado. Peça uma senha nova para quem administra o sistema.'
+    const { error } = await supabase!.auth.resetPasswordForEmail(conta, { redirectTo: window.location.origin })
     return error ? mensagemErroAuth(error.message) : null
   }
 
@@ -107,11 +127,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) localStorage.removeItem(CHAVE_DEMO)
     else await supabase.auth.signOut()
     setEmail(null)
+    setAdmin(false)
+    setPermissoes({})
   }
+
+  const nivel = (m: Modulo) => nivelDe(permissoes, admin, m)
+  const pode = (m: Modulo) => nivel(m) != null
+  const podeAlterar = (m: Modulo) => nivel(m) === 'editar'
 
   return (
     <Ctx.Provider
-      value={{ logado: !!email, carregando, email, nome, admin, aviso, recuperandoSenha, entrar, criarConta, esqueciSenha, definirSenha, sair }}
+      value={{ logado: !!email, carregando, email, nome, admin, nivel, pode, podeAlterar, aviso, recuperandoSenha, entrar, criarConta, esqueciSenha, definirSenha, sair }}
     >
       {children}
     </Ctx.Provider>

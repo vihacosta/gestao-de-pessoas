@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../auth'
 import { Botao, Cabecalho, Campo, Cartao, Entrada, Selecao } from '../components/ui'
 import { lerValor } from '../lib/extenso'
 import { hojeISO } from '../lib/hoje'
@@ -40,6 +41,7 @@ type CampoTexto = Exclude<{ [K in keyof Funcionario]-?: Funcionario[K] extends s
 export default function FuncionarioForm() {
   const { id } = useParams()
   const navegar = useNavigate()
+  const editaValores = useAuth().podeAlterar('valores')
   const { rows, carregando } = useTabela<Funcionario>('funcionarios')
   const [f, setF] = useState<Funcionario>(vazio)
   const [salarioInicial, setSalarioInicial] = useState('')
@@ -75,7 +77,7 @@ export default function FuncionarioForm() {
     setErro(null)
     try {
       const reg: Funcionario = { ...f }
-      if (!editando) reg.salarios = [{ data: f.dataAdmissao, valor: lerValor(salarioInicial), motivo: 'Admissão' }]
+      if (!editando) reg.salarios = editaValores ? [{ data: f.dataAdmissao, valor: lerValor(salarioInicial), motivo: 'Admissão' }] : []
       await salvar('funcionarios', reg)
       navegar(`/funcionarios/${reg.id}`)
     } catch (err) {
@@ -164,23 +166,27 @@ export default function FuncionarioForm() {
               <Campo rotulo="Data de desligamento" dica="Preencha só se o funcionário saiu da empresa.">
                 <Entrada type="date" value={f.dataDemissao ?? ''} onChange={(e) => set('dataDemissao', e.target.value || undefined)} />
               </Campo>
-            ) : (
+            ) : editaValores ? (
               <Campo rotulo={f.tipo === 'estagio' ? 'Bolsa-auxílio (R$) *' : 'Salário (R$) *'} dica="Reajustes são registrados depois, na ficha.">
                 <Entrada required inputMode="decimal" value={salarioInicial} onChange={(e) => setSalarioInicial(e.target.value)} placeholder="2.500,00" />
               </Campo>
+            ) : (
+              <p className="self-end pb-2 text-xs text-gray-500">O salário será preenchido por quem tem acesso a valores.</p>
             )}
           </Secao>
 
           <Secao titulo="Cartão benefício">
-            <Campo rotulo="Cultura (R$ por mês)" dica="Valor fixo de Cultura no cartão benefício. Vazio = não recebe.">
-              <Entrada
-                type="number"
-                min={0}
-                step={0.01}
-                value={f.beneficioCultura ?? ''}
-                onChange={(e) => set('beneficioCultura', e.target.value === '' ? undefined : Number(e.target.value))}
-              />
-            </Campo>
+            {editaValores && (
+              <Campo rotulo="Cultura (R$ por mês)" dica="Valor fixo de Cultura no cartão benefício. Vazio = não recebe.">
+                <Entrada
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={f.beneficioCultura ?? ''}
+                  onChange={(e) => set('beneficioCultura', e.target.value === '' ? undefined : Number(e.target.value))}
+                />
+              </Campo>
+            )}
             <label className="flex items-center gap-2 self-end pb-2 text-sm sm:col-span-2">
               <input type="checkbox" checked={!!f.semCartaoBeneficio} onChange={(e) => set('semCartaoBeneficio', e.target.checked || undefined)} />
               Não entra na planilha do cartão benefício (ex.: sócias)
@@ -202,8 +208,8 @@ export default function FuncionarioForm() {
             </Campo>
             {texto('contatoEmergencia1', 'Contato em caso de necessidade 1', { placeholder: 'Nome e telefone' })}
             {texto('contatoEmergencia2', 'Contato em caso de necessidade 2', { placeholder: 'Nome e telefone' })}
-            {texto('pix', 'Pix')}
-            {texto('dadosBancarios', 'Banco, agência e conta', { className: 'sm:col-span-2' })}
+            {editaValores && texto('pix', 'Pix')}
+            {editaValores && texto('dadosBancarios', 'Banco, agência e conta', { className: 'sm:col-span-2' })}
           </Secao>
 
           <Campo rotulo="Observações">

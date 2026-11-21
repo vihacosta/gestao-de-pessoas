@@ -1,6 +1,7 @@
 import { endOfMonth } from 'date-fns'
 import { AlertTriangle, FileUp } from 'lucide-react'
 import { useState } from 'react'
+import { useAuth } from '../auth'
 import { brl, d, iso, salarioEm } from '../lib/clt'
 import { guardarDocumento } from '../lib/documentos'
 import { lerHolerites, type HoleriteLido } from '../lib/holerite'
@@ -18,6 +19,7 @@ const tituloDe = (h: HoleriteLido) => `Holerite ${h.tipo.toLowerCase() === 'mens
  * guarda cada um na ficha e confere o salário com o cadastro.
  */
 export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
+  const { pode, podeAlterar } = useAuth()
   const { rows: funcionarios } = useTabela<Funcionario>('funcionarios')
   const { rows: documentos } = useTabela<DocumentoGuardado>('documentos')
   const [arquivo, setArquivo] = useState<{ nome: string; buf: ArrayBuffer } | null>(null)
@@ -125,7 +127,8 @@ export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
                   const f = funcionarios.find((x) => x.id === vinculos[i])
                   const fimMes = iso(endOfMonth(d(`${h.mes}-01`)))
                   const noCadastro = f ? salarioEm(f, fimMes) : 0
-                  const salarioDifere = f && h.salario != null && Math.abs(noCadastro - h.salario) > 0.009
+                  // Sem acesso a valores o cadastro vem sem salário: não dá para comparar
+                  const salarioDifere = f && pode('valores') && h.salario != null && Math.abs(noCadastro - h.salario) > 0.009
                   const jaTem = f && documentos.some((x) => x.funcionarioId === f.id && x.categoria === 'holerite_original' && x.mes === h.mes && x.titulo === tituloDe(h))
                   return (
                     <tr key={i} className="align-top">
@@ -154,9 +157,11 @@ export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
                             <span className="flex items-center gap-1">
                               <AlertTriangle size={12} /> cadastro: {noCadastro ? <Oculto>{brl(noCadastro)}</Oculto> : 'sem salário'}
                             </span>
-                            <button className="text-left text-marca-600 underline" onClick={() => atualizarSalario(f!, h)}>
-                              Atualizar cadastro
-                            </button>
+                            {podeAlterar('valores') && podeAlterar('funcionarios') && (
+                              <button className="text-left text-marca-600 underline" onClick={() => atualizarSalario(f!, h)}>
+                                Atualizar cadastro
+                              </button>
+                            )}
                           </div>
                         )}
                       </td>

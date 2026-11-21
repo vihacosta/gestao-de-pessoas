@@ -2,9 +2,11 @@ import {
   CalendarCheck,
   Clock,
   ClipboardList,
+  Eye,
   FileSignature,
   FolderArchive,
   LayoutDashboard,
+  Lock,
   LogOut,
   Palmtree,
   Receipt,
@@ -13,10 +15,12 @@ import {
   UserCog,
   Users,
 } from 'lucide-react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth'
-import { modoDemo, resetarDemo } from '../lib/store'
-import { cx } from './ui'
+import { moduloDaRota } from '../lib/permissoes'
+import { SemPermissao, modoDemo, resetarDemo } from '../lib/store'
+import { Cartao, cx } from './ui'
 
 export const areas = [
   { to: '/', rotulo: 'Painel', icone: LayoutDashboard, fim: true },
@@ -33,8 +37,64 @@ export const areas = [
 
 export const principaisCelular = ['/', '/funcionarios', '/ferias', '/holerites']
 
+/** Áreas que a pessoa pode abrir (Painel e Usuários são de todos) */
+export function useAreasPermitidas() {
+  const { pode } = useAuth()
+  const permitido = (to: string) => {
+    const m = moduloDaRota(to)
+    return !m || pode(m)
+  }
+  return areas.filter((a) => permitido(a.to)).map((a) => ({ ...a, submenu: a.submenu?.filter((s) => permitido(s.to)) }))
+}
+
+/** Bloqueia a tela de um módulo sem acesso e avisa quando é só para ver */
+function ConteudoProtegido() {
+  const { nivel } = useAuth()
+  const { pathname } = useLocation()
+  const m = moduloDaRota(pathname)
+  const n = m ? nivel(m) : 'editar'
+  if (!n)
+    return (
+      <Cartao className="mx-auto mt-10 max-w-md p-6 text-center">
+        <Lock className="mx-auto mb-2 text-gray-400" />
+        <h1 className="font-semibold">Você não tem acesso a esta área</h1>
+        <p className="mt-1 text-sm text-gray-500">Se precisar, peça a liberação para quem administra o sistema.</p>
+      </Cartao>
+    )
+  return (
+    <>
+      {n === 'ver' && (
+        <p className="mb-4 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800">
+          <Eye size={15} /> Você pode ver esta área, mas não alterar.
+        </p>
+      )}
+      <Outlet />
+    </>
+  )
+}
+
 export default function Layout() {
   const { email, sair } = useAuth()
+  const permitidas = useAreasPermitidas()
+  const [avisoPermissao, setAvisoPermissao] = useState<string | null>(null)
+
+  // Tentativa de alterar algo sem permissão: mostra o aviso em qualquer tela
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    const aoFalhar = (e: PromiseRejectionEvent) => {
+      if (!(e.reason instanceof SemPermissao)) return
+      e.preventDefault()
+      setAvisoPermissao(e.reason.message)
+      clearTimeout(timer)
+      timer = setTimeout(() => setAvisoPermissao(null), 5000)
+    }
+    window.addEventListener('unhandledrejection', aoFalhar)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('unhandledrejection', aoFalhar)
+    }
+  }, [])
+
   return (
     <div className="flex h-full">
       {/* Barra lateral (computador) */}
@@ -44,7 +104,7 @@ export default function Layout() {
           <span className="font-bold">Gestão de Pessoas</span>
         </div>
         <nav className="flex-1 space-y-1 px-3">
-          {areas.map((a) => (
+          {permitidas.map((a) => (
             <div key={a.to} className="space-y-1">
               <NavLink
                 to={a.to}
@@ -97,13 +157,19 @@ export default function Layout() {
           </div>
         )}
         <main className="flex-1 overflow-y-auto px-4 pb-24 pt-6 md:px-8 md:pb-8">
-          <Outlet />
+          <ConteudoProtegido />
         </main>
       </div>
 
+      {avisoPermissao && (
+        <div role="alert" className="fixed inset-x-4 bottom-20 z-[60] mx-auto max-w-md rounded-lg bg-gray-900 px-4 py-3 text-sm text-white shadow-lg md:bottom-6">
+          {avisoPermissao}
+        </div>
+      )}
+
       {/* Barra inferior (celular) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-gray-200 bg-white md:hidden">
-        {areas
+        {permitidas
           .filter((a) => principaisCelular.includes(a.to))
           .map((a) => (
             <NavLink

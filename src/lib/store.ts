@@ -41,20 +41,51 @@ function gravarLocal<T>(t: Tabela, rows: T[]) {
 
 // ---------------------------------------------------------------- API
 
+/** A pessoa tentou alterar algo fora das suas permissões */
+export class SemPermissao extends Error {
+  constructor() {
+    super('Você não tem permissão para fazer esta alteração. Fale com quem administra o sistema.')
+    this.name = 'SemPermissao'
+  }
+}
+
+type RegraEscrita = (tabela: Tabela, registro: unknown, operacao: 'salvar' | 'remover') => boolean
+let regraEscrita: RegraEscrita = () => true
+let acessoRestrito = false
+
+/** Definida no login. O banco também confere: isto é para mostrar um aviso claro. */
+export function definirRegraEscrita(regra: RegraEscrita, restrito: boolean) {
+  regraEscrita = regra
+  acessoRestrito = restrito
+}
+
+const traduzirErro = (e: { code?: string; message?: string }) => (e.code === '42501' ? new SemPermissao() : e)
+
 export async function listar<T extends { id: string }>(t: Tabela): Promise<T[]> {
   if (!supabase) return lerLocal<T>(t)
+  const sb = supabase
+  // Funcionários vêm por uma função do banco, que entrega só os campos permitidos para cada pessoa
+  const consulta = () => (t === 'funcionarios' ? sb.rpc('funcionarios_visiveis').select('data') : sb.from(t).select('data'))
   // o Supabase devolve no máximo 1000 linhas por consulta: busca em páginas
   const todas: T[] = []
   for (let de = 0; ; de += 1000) {
-    const { data, error } = await supabase.from(t).select('data').order('id').range(de, de + 999)
+    const { data, error } = await consulta().order('id').range(de, de + 999)
     if (error) throw error
-    todas.push(...(data ?? []).map((r) => r.data as T))
-    if (!data || data.length < 1000) break
+    const linhas = (data ?? []) as unknown as { data: T }[]
+    todas.push(...linhas.map((r) => r.data))
+    if (linhas.length < 1000) break
   }
   return todas
 }
 
 export async function salvar<T extends { id: string }>(t: Tabela, row: T): Promise<void> {
+  if (!regraEscrita(t, row, 'salvar')) throw new SemPermissao()
+  if (supabase && t === 'funcionarios') {
+    const { error } = await supabase.rpc('salvar_funcionarios', { registros: [row] })
+    if (error) throw traduzirErro(error)
+    avisar(t)
+    return
+  }
   if (!supabase) {
     const rows = lerLocal<T>(t)
     const i = rows.findIndex((r) => r.id === row.id)
@@ -63,7 +94,7 @@ export async function salvar<T extends { id: string }>(t: Tabela, row: T): Promi
     gravarLocal(t, rows)
   } else {
     const { error } = await supabase.from(t).upsert({ id: row.id, data: row })
-    if (error) throw error
+    if (error) throw traduzirErro(error)
   }
   avisar(t)
 }
@@ -71,25 +102,33 @@ export async function salvar<T extends { id: string }>(t: Tabela, row: T): Promi
 /** Grava vários registros de uma vez (importações) */
 export async function salvarVarios<T extends { id: string }>(t: Tabela, novos: T[]): Promise<void> {
   if (!novos.length) return
+  if (novos.some((r) => !regraEscrita(t, r, 'salvar'))) throw new SemPermissao()
   if (!supabase) {
     const porId = new Map(lerLocal<T>(t).map((r) => [r.id, r]))
     for (const r of novos) porId.set(r.id, r)
     gravarLocal(t, [...porId.values()])
   } else {
     for (let i = 0; i < novos.length; i += 200) {
-      const { error } = await supabase.from(t).upsert(novos.slice(i, i + 200).map((r) => ({ id: r.id, data: r })))
-      if (error) throw error
+      const parte = novos.slice(i, i + 200)
+      const { error } =
+        t === 'funcionarios'
+          ? await supabase.rpc('salvar_funcionarios', { registros: parte })
+          : await supabase.from(t).upsert(parte.map((r) => ({ id: r.id, data: r })))
+      if (error) throw traduzirErro(error)
     }
   }
   avisar(t)
 }
 
 export async function remover(t: Tabela, id: string): Promise<void> {
+  if (!regraEscrita(t, undefined, 'remover')) throw new SemPermissao()
   if (!supabase) {
     gravarLocal(t, lerLocal<{ id: string }>(t).filter((r) => r.id !== id))
   } else {
-    const { error } = await supabase.from(t).delete().eq('id', id)
-    if (error) throw error
+    const { data, error } = await supabase.from(t).delete().eq('id', id).select('id')
+    if (error) throw traduzirErro(error)
+    // O banco não dá erro ao recusar uma exclusão: apenas não apaga nada
+    if (acessoRestrito && !data?.length) throw new SemPermissao()
   }
   avisar(t)
 }

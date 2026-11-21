@@ -1,5 +1,6 @@
 import { Eye, EyeOff, X } from 'lucide-react'
 import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
+import { useAuth } from '../auth'
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
@@ -112,6 +113,9 @@ export function Vazio({ children }: { children: ReactNode }) {
 /** Valor em dinheiro que começa escondido; o olhinho ao lado mostra ou esconde. */
 export function Oculto({ children }: { children: ReactNode }) {
   const [visivel, setVisivel] = useState(false)
+  const { pode } = useAuth()
+  // Sem a permissão de valores, o banco nem entrega os dados: não mostra um R$ 0,00 enganoso
+  if (!pode('valores')) return <span className="whitespace-nowrap text-xs font-normal text-gray-400">sem acesso</span>
   return (
     <span className="inline-flex items-center gap-1 whitespace-nowrap">
       <span className={visivel ? undefined : 'select-none tracking-wider'}>{visivel ? children : 'R$ •••••'}</span>

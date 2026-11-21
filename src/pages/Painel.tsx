@@ -1,7 +1,8 @@
 import { AlertTriangle, Cake, ClipboardCheck, FolderArchive, Gift, Palmtree, PartyPopper, Users } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { areas, principaisCelular } from '../components/Layout'
+import { useAuth } from '../auth'
+import { principaisCelular, useAreasPermitidas } from '../components/Layout'
 import { SeloStatusFerias } from '../components/SolicitarFerias'
 import { Cabecalho, Cartao, Selo, Vazio, Oculto } from '../components/ui'
 import { aniversarioEmpresa, brl, dataBR, decimoTerceiro, fgtsMensal, periodosAquisitivos, salarioEm, statusFerias } from '../lib/clt'
@@ -26,6 +27,8 @@ function Numero({ icone, rotulo, valor, sub }: { icone: ReactNode; rotulo: strin
 }
 
 export default function Painel() {
+  const { pode } = useAuth()
+  const areas = useAreasPermitidas()
   const { rows: todos } = useTabela<Funcionario>('funcionarios')
   const { rows: ferias } = useTabela<Ferias>('ferias')
   const { rows: ausencias } = useTabela<Ausencia>('ausencias')
@@ -36,13 +39,17 @@ export default function Painel() {
   const tolerancia = useConfig().toleranciaJustificativa ?? 0
   const { rows: justificativas } = useTabela<Justificativa>('justificativas')
   const pendJust = pendenciaJustificativas(todos, pontos, ausencias, documentos, mesAssinar, tolerancia, justificativas)
-  const faltaFolha = pendJust.ocorrencias > 0 && !pendJust.assinada
+  // Cada aviso só aparece para quem tem acesso aos dados dele: sem isso, tudo pareceria pendente
+  const faltaFolha = pode('ponto') && pendJust.ocorrencias > 0 && !pendJust.assinada
+  const verHolerites = pode('holerites')
+  const verFerias = pode('ferias')
+  const verCadastro = pode('funcionarios')
   const hoje = hojeISO()
   const ano = Number(hoje.slice(0, 4))
   const ativos = todos.filter((f) => !f.dataDemissao)
-  const aConferir = ativos.filter((f) => precisaConferir(f, hoje)).sort((a, b) => a.nome.localeCompare(b.nome))
+  const aConferir = verCadastro ? ativos.filter((f) => precisaConferir(f, hoje)).sort((a, b) => a.nome.localeCompare(b.nome)) : []
 
-  const comStatus = ativos.filter((f) => !f.semFerias).map((f) => ({ f, status: statusFerias(periodosAquisitivos(f, ferias, ausencias, hoje), hoje) }))
+  const comStatus = verFerias ? ativos.filter((f) => !f.semFerias).map((f) => ({ f, status: statusFerias(periodosAquisitivos(f, ferias, ausencias, hoje), hoje) })) : []
   const alertasFerias = comStatus
     .filter((x) => x.status.codigo === 'vencida' || x.status.codigo === 'vence_em_breve')
     .sort((a, b) => (a.status.diasParaLimite ?? 0) - (b.status.diasParaLimite ?? 0))
@@ -139,7 +146,7 @@ export default function Painel() {
               ))}
             </ul>
           )}
-          {ativos.some((f) => !f.dataNascimento) && (
+          {verCadastro && ativos.some((f) => !f.dataNascimento) && (
             <Link to="/funcionarios" className="block border-t border-gray-100 px-4 py-2 text-xs text-amber-700 hover:bg-gray-50">
               {ativos.filter((f) => !f.dataNascimento).length} funcionário(s) sem data de nascimento no cadastro
             </Link>
@@ -200,12 +207,12 @@ export default function Painel() {
           </Cartao>
         )}
 
-        {(pend.holerites > 0 || pend.pontos > 0 || faltaFolha) && (
+        {((verHolerites && (pend.holerites > 0 || pend.pontos > 0)) || faltaFolha) && (
           <Cartao>
             <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3 font-semibold">
               <FolderArchive size={18} className="text-amber-600" /> Assinaturas de {nomeMes(mesAssinar).toLowerCase()}
             </div>
-            {(pend.holerites > 0 || pend.pontos > 0) && (
+            {verHolerites && (pend.holerites > 0 || pend.pontos > 0) && (
               <Link to={`/holerites?mes=${mesAssinar}`} className="block space-y-1 px-4 py-3 text-sm hover:bg-gray-50">
                 {pend.holerites > 0 && <div>{pend.holerites} holerite(s) assinado(s) faltando</div>}
                 {pend.pontos > 0 && <div>{pend.pontos} cartão(ões) ponto assinado(s) faltando</div>}
@@ -221,7 +228,7 @@ export default function Painel() {
           </Cartao>
         )}
 
-        {pendentes.length > 0 && (
+        {verFerias && pendentes.length > 0 && (
           <Cartao>
             <div className="border-b border-gray-100 px-4 py-3 font-semibold">Pedidos de férias aguardando aprovação</div>
             <ul className="divide-y divide-gray-100">

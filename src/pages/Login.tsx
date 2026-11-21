@@ -46,7 +46,7 @@ export default function Login() {
     else {
       const r = await esqueciSenha(email)
       if (r) setErro(r)
-      else setOk('Pronto! Se este e-mail tiver conta, chega um link para criar uma senha nova. Veja também a caixa de spam.')
+      else setOk('Pronto! Se houver conta com e-mail, chega um link para criar uma senha nova. Veja também a caixa de spam.')
     }
     setEnviando(false)
   }
@@ -67,10 +67,10 @@ export default function Login() {
     <Moldura onSubmit={enviar}>
       {modo === 'criar' && (
         <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
-          Primeiro acesso: crie sua senha. Só funciona para e-mails liberados por quem administra o sistema.
+          Primeiro acesso: crie sua senha. Só funciona para usuários liberados por quem administra o sistema.
         </p>
       )}
-      {modo === 'esqueci' && <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700">Informe seu e-mail para receber um link e criar uma senha nova.</p>}
+      {modo === 'esqueci' && <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700">Informe seu usuário ou e-mail. Quem tem e-mail recebe um link; quem não tem pede uma senha nova para quem administra.</p>}
       {aviso && modo === 'entrar' && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{aviso}</p>}
 
       {modo === 'criar' && (
@@ -78,8 +78,8 @@ export default function Login() {
           <Entrada required value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" />
         </Campo>
       )}
-      <Campo rotulo="E-mail">
-        <Entrada type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
+      <Campo rotulo="Usuário ou e-mail">
+        <Entrada required autoCapitalize="none" autoCorrect="off" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
       </Campo>
       {modo !== 'esqueci' && (
         <Campo rotulo={modo === 'criar' ? 'Crie uma senha (mínimo 6 caracteres)' : 'Senha'}>

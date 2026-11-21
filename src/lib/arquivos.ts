@@ -3,7 +3,7 @@
  * - Supabase: bucket privado "arquivos".
  * - Modo demonstração: IndexedDB deste navegador.
  */
-import { supabase } from './store'
+import { SemPermissao, supabase } from './store'
 
 const BUCKET = 'arquivos'
 const DB = 'gp-arquivos'
@@ -32,7 +32,7 @@ export async function enviarArquivo(caminho: string, arquivo: Blob): Promise<voi
     return
   }
   const { error } = await supabase.storage.from(BUCKET).upload(caminho, arquivo, { upsert: true })
-  if (error) throw error
+  if (error) throw /row-level|policy|unauthorized/i.test(error.message) ? new SemPermissao() : error
 }
 
 export async function baixarArquivo(caminho: string): Promise<Blob> {

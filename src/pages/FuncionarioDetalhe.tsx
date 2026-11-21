@@ -1,6 +1,7 @@
 import { ArrowLeft, Cake, ClipboardCheck, FileDown, FileText, Gift, Pencil, Plus, Trash2, UserMinus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../auth'
 import { SeloStatusFerias, SolicitarFerias } from '../components/SolicitarFerias'
 import { Botao, Cabecalho, Campo, Cartao, Entrada, Modal, Selo, Vazio, Oculto } from '../components/ui'
 import {
@@ -43,6 +44,7 @@ function Info({ rotulo, valor }: { rotulo: string; valor?: string }) {
 export default function FuncionarioDetalhe() {
   const { id } = useParams()
   const navegar = useNavigate()
+  const { admin, pode, podeAlterar } = useAuth()
   const funcs = useTabela<Funcionario>('funcionarios')
   const { rows: ferias } = useTabela<Ferias>('ferias')
   const { rows: ausencias } = useTabela<Ausencia>('ausencias')
@@ -130,14 +132,18 @@ export default function FuncionarioDetalhe() {
                 <FileText size={16} /> Outro documento
               </Botao>
             </Link>
-            <Link to={`/funcionarios/${f.id}/editar`}>
-              <Botao variante="secundario">
-                <Pencil size={16} /> Editar
+            {podeAlterar('funcionarios') && (
+              <Link to={`/funcionarios/${f.id}/editar`}>
+                <Botao variante="secundario">
+                  <Pencil size={16} /> Editar
+                </Botao>
+              </Link>
+            )}
+            {admin && (
+              <Botao variante="perigo" onClick={excluir} aria-label="Excluir">
+                <Trash2 size={16} />
               </Botao>
-            </Link>
-            <Botao variante="perigo" onClick={excluir} aria-label="Excluir">
-              <Trash2 size={16} />
-            </Botao>
+            )}
           </>
         }
       />
@@ -172,8 +178,8 @@ export default function FuncionarioDetalhe() {
             <Info rotulo="Pai" valor={f.nomePai} />
             <Info rotulo="Naturalidade" valor={f.naturalidade} />
             <Info rotulo="Contato de emergência" valor={[f.contatoEmergencia1, f.contatoEmergencia2].filter(Boolean).join(' · ')} />
-            <Info rotulo="Pix" valor={f.pix} />
-            <Info rotulo="Banco" valor={f.dadosBancarios} />
+            {pode('valores') && <Info rotulo="Pix" valor={f.pix} />}
+            {pode('valores') && <Info rotulo="Banco" valor={f.dadosBancarios} />}
             {f.dependentes && (
               <div className="col-span-2 sm:col-span-3">
                 <Info rotulo="Dependentes" valor={f.dependentes} />
@@ -324,12 +330,15 @@ export default function FuncionarioDetalhe() {
         )}
 
         {/* Salários */}
+        {pode('valores') && (
         <Cartao className="p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-semibold">Histórico salarial</h2>
-            <Botao variante="fantasma" onClick={() => setReajusteAberto(true)} className="px-2">
-              <Plus size={16} /> Reajuste
-            </Botao>
+            {podeAlterar('valores') && podeAlterar('funcionarios') && (
+              <Botao variante="fantasma" onClick={() => setReajusteAberto(true)} className="px-2">
+                <Plus size={16} /> Reajuste
+              </Botao>
+            )}
           </div>
           <ul className="space-y-2 text-sm">
             {[...f.salarios]
@@ -345,6 +354,7 @@ export default function FuncionarioDetalhe() {
               ))}
           </ul>
         </Cartao>
+        )}
 
         <DocumentosPessoais f={f} />
 
@@ -354,13 +364,17 @@ export default function FuncionarioDetalhe() {
           <HistoricoOcorrencias funcionarioId={f.id} />
         </div>
 
-        <div className="lg:col-span-3">
-          <ErrosFuncionario funcionarioId={f.id} />
-        </div>
+        {pode('valores') && (
+          <>
+            <div className="lg:col-span-3">
+              <ErrosFuncionario funcionarioId={f.id} />
+            </div>
 
-        <div className="lg:col-span-3">
-          <AquisicoesFuncionario funcionarioId={f.id} />
-        </div>
+            <div className="lg:col-span-3">
+              <AquisicoesFuncionario funcionarioId={f.id} />
+            </div>
+          </>
+        )}
       </div>
 
       <NovoReajuste aberto={reajusteAberto} onFechar={() => setReajusteAberto(false)} funcionario={f} />

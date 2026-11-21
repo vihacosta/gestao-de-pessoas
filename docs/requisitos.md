@@ -95,6 +95,15 @@ Status: requisitos definidos; falta decidir onde o sistema vai rodar
   - As colunas 1/3/5/10/15 ANOS usam sempre o dia 1º do mês e estão erradas para quem entrou em 2025 (10 e 15 anos caem em 1930–1940). O sistema não usa essas colunas: calcula os marcos pela data de admissão exata.
   - Dayane Roberta Batista dos Santos está como ATIVO, mas sem aniversário e sem admissão na planilha.
 
+### 10. Usuários e permissões
+
+- Entrada com **usuário ou e-mail**. O e-mail é opcional: quem não tem pede uma senha nova ao administrador.
+- O **administrador** vê e altera tudo. Para os demais, ele escolhe em Usuários > Acesso, módulo por módulo: sem acesso, ver ou editar. "Salários e valores" é uma permissão separada.
+- Quem já era usuário comum fica **sem acesso a módulos** até o administrador escolher.
+- A regra vale no banco (`supabase/schema.sql`), não só na tela. Só o administrador apaga funcionários.
+- Atestados e licenças só aparecem para "Faltas e bônus" e "Fechamento mensal".
+- Quem conhece um nome de usuário consegue descobrir o e-mail ligado a ele, porque o login precisa dessa consulta antes da senha.
+
 ## Regras CLT de referência
 
 - Período aquisitivo: a cada 12 meses trabalhados, 30 dias de férias
