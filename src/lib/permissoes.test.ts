@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ehEmailInterno, emailInterno, moduloDaRota, nivelDe, normalizarUsuario, podeEditar, podeGravar, podeVer, usuarioValido } from './permissoes'
+import { ehEmailInterno, emailInterno, moduloDaRota, modulosDaRota, nivelDe, normalizarUsuario, podeEditar, podeGravar, podeVer, usuarioValido } from './permissoes'
 
 describe('permissões', () => {
   it('administrador pode tudo', () => {
@@ -36,6 +36,13 @@ describe('permissões', () => {
     expect(moduloDaRota('/ponto/ocorrencias')).toBe('ponto')
     expect(moduloDaRota('/')).toBeNull()
     expect(moduloDaRota('/usuarios')).toBeNull()
+  })
+
+  it('a página de ocorrências e bônus abre com qualquer um dos dois módulos', () => {
+    expect(modulosDaRota('/ausencias')).toEqual(['ponto', 'ausencias'])
+    expect(modulosDaRota('/ponto/ocorrencias')).toEqual(['ponto', 'ausencias'])
+    expect(modulosDaRota('/ponto')).toEqual(['ponto'])
+    expect(modulosDaRota('/')).toEqual([])
   })
 
   it('nome de usuário', () => {

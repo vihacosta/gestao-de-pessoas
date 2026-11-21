@@ -11,25 +11,33 @@ import {
   Palmtree,
   Receipt,
   Settings,
-  Stethoscope,
   UserCog,
   Users,
+  type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth'
-import { moduloDaRota } from '../lib/permissoes'
+import { modulosDaRota } from '../lib/permissoes'
 import { SemPermissao, modoDemo, resetarDemo } from '../lib/store'
 import { Cartao, cx } from './ui'
 
-export const areas = [
+interface Area {
+  to: string
+  rotulo: string
+  icone: LucideIcon
+  fim?: boolean
+  submenu?: { to: string; rotulo: string; icone: LucideIcon }[]
+}
+
+export const areas: Area[] = [
   { to: '/', rotulo: 'Painel', icone: LayoutDashboard, fim: true },
   { to: '/funcionarios', rotulo: 'Funcionários', icone: Users },
   { to: '/ferias', rotulo: 'Férias', icone: Palmtree },
   { to: '/documentos', rotulo: 'Documentos', icone: FileSignature },
   { to: '/holerites', rotulo: 'Holerites', icone: FolderArchive },
-  { to: '/ponto', rotulo: 'Cartão ponto', icone: Clock, fim: true, submenu: [{ to: '/ponto/ocorrencias', rotulo: 'Ocorrências', icone: ClipboardList }] },
-  { to: '/ausencias', rotulo: 'Faltas e bônus', icone: Stethoscope },
+  { to: '/ponto', rotulo: 'Cartão ponto', icone: Clock, fim: true },
+  { to: '/ausencias', rotulo: 'Ocorrências e bônus', icone: ClipboardList },
   { to: '/fechamento', rotulo: 'Fechamento mensal', icone: Receipt },
   { to: '/usuarios', rotulo: 'Usuários', icone: UserCog },
   { to: '/configuracoes', rotulo: 'Configurações', icone: Settings },
@@ -41,8 +49,8 @@ export const principaisCelular = ['/', '/funcionarios', '/ferias', '/holerites']
 export function useAreasPermitidas() {
   const { pode } = useAuth()
   const permitido = (to: string) => {
-    const m = moduloDaRota(to)
-    return !m || pode(m)
+    const modulos = modulosDaRota(to)
+    return !modulos.length || modulos.some(pode)
   }
   return areas.filter((a) => permitido(a.to)).map((a) => ({ ...a, submenu: a.submenu?.filter((s) => permitido(s.to)) }))
 }
@@ -51,8 +59,9 @@ export function useAreasPermitidas() {
 function ConteudoProtegido() {
   const { nivel } = useAuth()
   const { pathname } = useLocation()
-  const m = moduloDaRota(pathname)
-  const n = m ? nivel(m) : 'editar'
+  const modulos = modulosDaRota(pathname)
+  const niveis = modulos.map(nivel)
+  const n = !modulos.length || niveis.includes('editar') ? 'editar' : niveis.includes('ver') ? 'ver' : null
   if (!n)
     return (
       <Cartao className="mx-auto mt-10 max-w-md p-6 text-center">

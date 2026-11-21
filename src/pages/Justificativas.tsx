@@ -1,17 +1,17 @@
-import { addMonths, format } from 'date-fns'
-import { ChevronLeft, ChevronRight, Eye, FileText, Printer, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { format } from 'date-fns'
+import { Eye, FileText, Printer, Trash2 } from 'lucide-react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { EnviarArquivos } from '../components/EnviarArquivos'
-import { HistoricoOcorrencias, SeletorTolerancia } from '../components/HistoricoOcorrencias'
-import { Botao, Cabecalho, Cartao, Entrada, Selo, Vazio, cx } from '../components/ui'
+import { SeletorTolerancia } from '../components/HistoricoOcorrencias'
+import { Botao, Cartao, Entrada, Selo, Vazio } from '../components/ui'
 import { d, dataBR } from '../lib/clt'
 import { abrirDocumento, excluirDocumento, guardarDocumento, tamanhoTexto } from '../lib/documentos'
 import { hhmm, htmlFolha, ocorrenciasDoMes, passaDaTolerancia, textoOcorrencia, type Justificativa, type Ocorrencia } from '../lib/justificativas'
 import { remover, salvar, useTabela } from '../lib/store'
 import type { Ausencia, CartaoPontoSalvo, DocumentoGuardado, Funcionario } from '../lib/types'
 import { useConfig } from './Configuracoes'
-import { mesAnterior, nomeMes } from './Holerites'
+import { nomeMes } from './Holerites'
 
 /** Documentos coletivos (sem funcionário) usam este id */
 export const COLETIVO = 'coletivo'
@@ -50,17 +50,20 @@ function alternarBanco(o: Ocorrencia, j?: Justificativa) {
   return salvar<Justificativa>('justificativas', { id: o.id, funcionarioId: o.funcionarioId, data: o.data, motivo: j.motivo })
 }
 
-export default function Justificativas() {
-  const [params, setParams] = useSearchParams()
-  const mes = params.get('mes') ?? mesAnterior()
-  const mudar = (n: number) => setParams({ mes: format(addMonths(d(`${mes}-01`), n), 'yyyy-MM') })
+/** Aba de ocorrências da página "Ocorrências e bônus": folha do mês, com os demais lançamentos logo abaixo */
+export default function Justificativas({ mes, acoesManual, lancamentos }: {
+  mes: string
+  /** Botões de editar e excluir das linhas lançadas à mão */
+  acoesManual?: (o: Ocorrencia) => ReactNode
+  /** Lançamentos do mês que não aparecem na lista da folha */
+  lancamentos?: (visiveis: Ocorrencia[]) => ReactNode
+}) {
   const { rows: funcionarios, carregando } = useTabela<Funcionario>('funcionarios')
   const { rows: pontos } = useTabela<CartaoPontoSalvo>('pontos')
   const { rows: ausencias } = useTabela<Ausencia>('ausencias')
   const { rows: justificativas } = useTabela<Justificativa>('justificativas')
   const { rows: documentos } = useTabela<DocumentoGuardado>('documentos')
 
-  const historico = params.get('ver') === 'historico'
   const tolerancia = useConfig().toleranciaJustificativa ?? 0
   const [verMenores, setVerMenores] = useState(false)
   const doMes = useMemo(() => ocorrenciasDoMes(funcionarios, pontos, ausencias, mes, justificativas), [funcionarios, pontos, ausencias, mes, justificativas])
@@ -93,70 +96,27 @@ export default function Justificativas() {
 
   return (
     <>
-      <Cabecalho
-        titulo="Ocorrências"
-        subtitulo="Faltas e horas devidas no dia (atraso ou saída antes do horário sem compensar), para cada pessoa escrever o motivo e assinar"
-      />
-
-      <div className="mb-4 flex gap-1 border-b border-gray-200">
-        {[
-          { id: false, rotulo: 'Folha do mês' },
-          { id: true, rotulo: 'Histórico por pessoa' },
-        ].map((aba) => (
-          <button
-            key={aba.rotulo}
-            onClick={() => setParams(aba.id ? { mes, ver: 'historico' } : { mes })}
-            className={cx(
-              '-mb-px border-b-2 px-4 py-2 text-sm font-medium',
-              historico === aba.id ? 'border-marca-600 text-marca-700' : 'border-transparent text-gray-500 hover:text-gray-800',
-            )}
-          >
-            {aba.rotulo}
-          </button>
-        ))}
-      </div>
-
-      {historico ? (
-        <>
-          <div className="mb-3 flex justify-end">
-            <SeletorTolerancia />
-          </div>
-          <HistoricoOcorrencias />
-        </>
-      ) : (
-      <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1">
-          <Botao variante="fantasma" className="px-2" onClick={() => mudar(-1)} aria-label="Mês anterior">
-            <ChevronLeft size={18} />
-          </Botao>
-          <span className="min-w-40 text-center font-medium">{nomeMes(mes)}</span>
-          <Botao variante="fantasma" className="px-2" onClick={() => mudar(1)} aria-label="Próximo mês">
-            <ChevronRight size={18} />
-          </Botao>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Botao variante="secundario" onClick={imprimir}>
-            <Printer size={16} /> Imprimir folha
-          </Botao>
-          <EnviarArquivos onArquivos={enviarFolha} className="px-3 py-2 text-sm">
-            Enviar folha assinada
-          </EnviarArquivos>
-        </div>
-      </div>
-
       {!temCartao && (
         <p className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          O cartão ponto de {nomeMes(mes).toLowerCase()} ainda não foi importado: a lista mostra só o que foi lançado à mão em{' '}
-          <Link to={`/ausencias?mes=${mes}`} className="underline">Faltas e bônus</Link>.{' '}
+          O cartão ponto de {nomeMes(mes).toLowerCase()} ainda não foi importado: a lista mostra só o que foi lançado à mão.{' '}
           <Link to="/ponto" className="underline">Importar cartão ponto</Link>
         </p>
       )}
 
       <Cartao className="mb-4 p-4">
-        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
-          Folha assinada
-          {folhas.length ? <Selo cor="verde">Guardada</Selo> : <Selo cor={ocorrencias.length ? 'amarelo' : 'cinza'}>Falta</Selo>}
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+            Folha assinada
+            {folhas.length ? <Selo cor="verde">Guardada</Selo> : <Selo cor={ocorrencias.length ? 'amarelo' : 'cinza'}>Falta</Selo>}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Botao variante="secundario" onClick={imprimir}>
+              <Printer size={16} /> Imprimir folha
+            </Botao>
+            <EnviarArquivos onArquivos={enviarFolha} className="px-3 py-2 text-sm">
+              Enviar folha assinada
+            </EnviarArquivos>
+          </div>
         </div>
         {folhas.length === 0 ? (
           <p className="text-sm text-gray-500">Depois que todos assinarem, tire foto da folha (pode ser mais de uma página) e envie pelo botão acima.</p>
@@ -215,9 +175,12 @@ export default function Justificativas() {
                 </div>
               </div>
               <Motivo o={o} j={just(o)} />
-              <Botao variante="secundario" className="whitespace-nowrap px-2.5 py-1.5 text-xs" onClick={() => alternarBanco(o, just(o))}>
-                Usou banco de horas
-              </Botao>
+              <div className="flex items-center gap-1">
+                <Botao variante="secundario" className="whitespace-nowrap px-2.5 py-1.5 text-xs" onClick={() => alternarBanco(o, just(o))}>
+                  Usou banco de horas
+                </Botao>
+                {o.origem === 'manual' && acoesManual?.(o)}
+              </div>
             </li>
           ))}
         </ul>
@@ -227,7 +190,7 @@ export default function Justificativas() {
         <Cartao className="mt-4">
           <div className="border-b border-gray-100 px-4 py-3">
             <span className="font-semibold">Uso do banco de horas</span>
-            <span className="ml-2 text-xs text-gray-500">{usoBanco.length} dia(s) · não contam como falta nem horas devidas e não vão para a folha</span>
+            <span className="ml-2 text-xs text-gray-500">{usoBanco.length} dia(s) · não contam como falta nem horas devidas, não vão para a folha e não fazem perder o bônus</span>
           </div>
           <ul className="divide-y divide-gray-100">
             {usoBanco.map((o) => (
@@ -250,13 +213,13 @@ export default function Justificativas() {
         </Cartao>
       )}
 
+      {lancamentos?.(ocorrencias)}
+
       <p className="mt-3 text-xs text-gray-500">
         Os motivos digitados aqui já saem impressos na folha; os que ficarem em branco, a pessoa escreve à mão. Atestados, férias e licenças não entram na folha.
         "Horas devidas" junta atraso, saída antes do horário e volta tarde do almoço. O que foi compensado no mesmo dia não aparece; se a compensação foi parcial, aparece só o tempo que ficou faltando.
-        Faltas sempre aparecem; horas devidas só quando passam do tempo escolhido (o bônus por assiduidade continua contando tudo).
+        Faltas sempre aparecem; horas devidas só quando passam do tempo escolhido (o bônus por assiduidade conta tudo, menos os dias marcados como uso do banco de horas).
       </p>
-      </>
-      )}
     </>
   )
 }

@@ -9,6 +9,7 @@ import { bonusDoMes, horasTexto } from '../lib/bonus'
 import { lerCartoes, somaExtras, somaFaltas, type ArquivoPontoLido, type CartaoLido } from '../lib/cartaoPonto'
 import { brl, d } from '../lib/clt'
 import { hojeISO } from '../lib/hoje'
+import type { Justificativa } from '../lib/justificativas'
 import { lerTextoPdf, separarPaginas } from '../lib/pdf'
 import { novoId, remover, salvar, useTabela } from '../lib/store'
 import type { Ausencia, CartaoPontoSalvo, DocumentoGuardado, Funcionario } from '../lib/types'
@@ -41,6 +42,7 @@ export default function CartaoPontoPage() {
   const { rows: funcionarios } = useTabela<Funcionario>('funcionarios')
   const { rows: ausencias } = useTabela<Ausencia>('ausencias')
   const { rows: pontos } = useTabela<CartaoPontoSalvo>('pontos')
+  const { rows: justificativas } = useTabela<Justificativa>('justificativas')
   const config = useConfig()
 
   const [arquivo, setArquivo] = useState<{ nome: string; buf: ArrayBuffer } | null>(null)
@@ -180,7 +182,7 @@ export default function CartaoPontoPage() {
                         saldoTotal: c.saldoTotal,
                         caminho: '',
                         importadoEm: '',
-                      })
+                      }, justificativas)
                     : null
                   return (
                     <tr key={i} className="align-top">

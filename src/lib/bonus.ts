@@ -8,10 +8,17 @@
  * 3. somou no mês `bonusLimiteMes` horas ou mais de ausências e atrasos não compensados.
  *
  * Faltas justificadas e atestados contam. Única exceção: falecimento (atestado de óbito).
+ *
+ * Dia marcado como "Usou banco de horas" nas ocorrências: vale como confirmação do RH de que o saldo
+ * cobriu a ausência inteira (5º parágrafo do termo), então não conta em nenhuma das duas regras.
+ * Se o saldo estimado pelo cartão for menor que a ausência, o bônus fica mantido e aparece um aviso para conferir.
  */
 import { addDays, differenceInCalendarDays, endOfMonth, format, getDay, isAfter, isBefore, max as maxDate, min as minDate } from 'date-fns'
 import { d, iso } from './clt'
+import { tiposNaFolha, type Justificativa } from './justificativas'
 import type { Ausencia, CartaoPontoSalvo, ConfigEmpresa, Funcionario, TipoAusencia } from './types'
+
+export type MarcaBanco = Pick<Justificativa, 'funcionarioId' | 'data' | 'usoBanco'>
 
 /** Jornada diária média (44h semanais em 5 dias) */
 export const JORNADA_DIA = 8.8
@@ -54,7 +61,8 @@ function diasNoMes(a: Ausencia, ini: Date, fim: Date): string[] {
 }
 
 /** @param mes yyyy-MM */
-export function bonusDoMes(f: Funcionario, ausencias: Ausencia[], mes: string, c: ConfigEmpresa, cartao?: CartaoPontoSalvo): ResultadoBonus {
+export function bonusDoMes(f: Funcionario, ausencias: Ausencia[], mes: string, c: ConfigEmpresa, cartao?: CartaoPontoSalvo, marcas: MarcaBanco[] = []): ResultadoBonus {
+  const diasBanco = new Set(marcas.filter((j) => j.usoBanco && j.funcionarioId === f.id).map((j) => j.data))
   const ini = d(`${mes}-01`)
   const fim = endOfMonth(ini)
   const vazio = { valor: 0, motivos: [] as string[], avisos: [] as string[], usouCartao: !!cartao, horasNaoCompensadas: 0, ocorrencias: [] as Ausencia[] }
@@ -80,7 +88,7 @@ export function bonusDoMes(f: Funcionario, ausencias: Ausencia[], mes: string, c
   if (cartao) {
     // Dias de falecimento (nojo) registrados à mão não contam
     const diasIgnorados = new Set(todasDoMes.filter((a) => tiposIgnoradosNoBonus.includes(a.tipo)).flatMap((a) => diasNoMes(a, ini, fim)))
-    const r = analisarCartao(cartao, c, diasIgnorados)
+    const r = analisarCartao(cartao, c, diasIgnorados, diasBanco)
     motivos.push(...r.motivos)
     avisos.push(...r.avisos)
     naoCompensadas += r.naoCompensadas / 60
@@ -90,7 +98,9 @@ export function bonusDoMes(f: Funcionario, ausencias: Ausencia[], mes: string, c
   }
 
   for (const a of doMes) {
-    const dias = diasNoMes(a, ini, fim)
+    // Só faltas e horas devidas podem ser marcadas como uso do banco
+    const dias = diasNoMes(a, ini, fim).filter((x) => !(tiposNaFolha[a.tipo] && diasBanco.has(x)))
+    if (!dias.length) continue
     const umDia = a.inicio === a.fim
     const horasDia = umDia && a.horas != null ? a.horas : JORNADA_DIA
     const totalHoras = horasDia * dias.length
@@ -133,7 +143,7 @@ const rotulosLicenca = ['Licença-maternidade', 'Licença-paternidade']
  *   O saldo do dia é estimado: saldo anterior + extras - faltas dos dias anteriores do mês.
  * - Regra do mês: faltas - extras do mês - saldo anterior positivo >= limite perde. Atestados não são cobertos pelo banco.
  */
-export function analisarCartao(cartao: CartaoPontoSalvo, c: ConfigEmpresa, diasIgnorados = new Set<string>()) {
+export function analisarCartao(cartao: CartaoPontoSalvo, c: ConfigEmpresa, diasIgnorados = new Set<string>(), diasBanco = new Set<string>()) {
   const motivos: string[] = []
   const avisos: string[] = []
   const limiteDia = c.bonusLimiteDia * 60
@@ -141,6 +151,8 @@ export function analisarCartao(cartao: CartaoPontoSalvo, c: ConfigEmpresa, diasI
   let faltasComuns = 0
   let atestados = 0
   let extras = 0
+  /** Minutos marcados como uso do banco que o saldo estimado não alcançava */
+  let confirmadasPeloRH = 0
 
   for (const dia of [...cartao.dias].sort((a, b) => a.data.localeCompare(b.data))) {
     const quando = format(d(dia.data), 'dd/MM')
@@ -154,6 +166,17 @@ export function analisarCartao(cartao: CartaoPontoSalvo, c: ConfigEmpresa, diasI
       atestado = true
     } else aus = dia.faltas
 
+    if (aus > 0 && !atestado && diasBanco.has(dia.data)) {
+      const disponivel = Math.max(0, banco) + dia.extras
+      const descoberto = Math.max(0, aus - disponivel)
+      if (descoberto > 0) avisos.push(`Uso do banco marcado em ${quando}: o saldo estimado (${fmtH(disponivel / 60)}) não cobre a ausência de ${fmtH(aus / 60)}. Confira no cartão`)
+      confirmadasPeloRH += descoberto
+      faltasComuns += aus
+      extras += dia.extras
+      banco += dia.extras - aus + descoberto
+      continue
+    }
+
     if (aus > 0 && aus >= limiteDia) {
       if (!atestado && banco >= aus) avisos.push(`Ausência de ${fmtH(aus / 60)} em ${quando} coberta pelo banco de horas (saldo estimado de ${fmtH(banco / 60)} no dia): confira no cartão`)
       else motivos.push(`${atestado ? 'Atestado' : dia.rotulo === 'Falta' ? 'Falta' : 'Ausência'} de ${fmtH(aus / 60)} em ${quando}`)
@@ -164,7 +187,7 @@ export function analisarCartao(cartao: CartaoPontoSalvo, c: ConfigEmpresa, diasI
     banco += dia.extras - (atestado ? 0 : aus)
   }
 
-  const naoCompensadas = Math.max(0, faltasComuns - extras - Math.max(0, cartao.saldoAnterior)) + atestados
+  const naoCompensadas = Math.max(0, faltasComuns - extras - Math.max(0, cartao.saldoAnterior) - confirmadasPeloRH) + atestados
   return { motivos, avisos, naoCompensadas, faltas: faltasComuns + atestados, extras }
 }
 

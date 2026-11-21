@@ -3,7 +3,9 @@ import { ptBR } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Copy, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../auth'
 import { CartaoBeneficio } from '../components/CartaoBeneficio'
+import { HistoricoOcorrencias, SeletorTolerancia } from '../components/HistoricoOcorrencias'
 import { Botao, Cabecalho, Campo, Cartao, Entrada, Modal, Selecao, Selo, Vazio, cx, Oculto } from '../components/ui'
 import { ACEITOS } from '../components/EnviarArquivos'
 import { apagarArquivo, enviarArquivo } from '../lib/arquivos'
@@ -12,9 +14,12 @@ import { bonusDoMes, horasTexto, JORNADA_DIA, type ResultadoBonus } from '../lib
 import { brl, d, dataBR } from '../lib/clt'
 import { lerValor } from '../lib/extenso'
 import { hojeISO } from '../lib/hoje'
+import { tiposNaFolha, type Justificativa, type Ocorrencia } from '../lib/justificativas'
 import { novoId, remover, salvar, useTabela } from '../lib/store'
 import type { Ausencia, CartaoPontoSalvo, Funcionario, TipoAusencia } from '../lib/types'
 import { useConfig } from './Configuracoes'
+import { mesAnterior } from './Holerites'
+import FolhaOcorrencias from './Justificativas'
 
 export const nomesTipo: Record<TipoAusencia, string> = {
   atraso: 'Atraso',
@@ -31,7 +36,6 @@ export const nomesTipo: Record<TipoAusencia, string> = {
 
 const parciais: TipoAusencia[] = ['atraso', 'saida_antecipada']
 
-const mesAtual = () => hojeISO().slice(0, 7)
 const nomeMes = (m: string) => { const t = format(d(`${m}-01`), "MMMM 'de' yyyy", { locale: ptBR }); return t[0].toUpperCase() + t.slice(1) }
 
 function SeletorMes({ mes, onMudar }: { mes: string; onMudar: (m: string) => void }) {
@@ -51,29 +55,35 @@ function SeletorMes({ mes, onMudar }: { mes: string; onMudar: (m: string) => voi
 
 export default function Ausencias() {
   const [params, setParams] = useSearchParams()
-  const aba = params.get('aba') === 'bonus' ? 'bonus' : 'ocorrencias'
-  const [mes, setMes] = useState(params.get('mes') ?? mesAtual())
+  const { pode } = useAuth()
+  const podeFolha = pode('ponto')
+  const podeLancar = pode('ausencias')
+  const abas = [
+    ['ocorrencias', 'Ocorrências'],
+    ...(podeLancar ? ([['bonus', 'Bônus do mês']] as const) : []),
+    ...(podeFolha ? ([['historico', 'Histórico por pessoa']] as const) : []),
+  ] as const
+  const pedida = params.get('aba')
+  const aba = abas.find(([k]) => k === pedida)?.[0] ?? 'ocorrencias'
+  const [mes, setMes] = useState(params.get('mes') ?? mesAnterior())
   const [editando, setEditando] = useState<Ausencia | 'nova' | null>(null)
 
   return (
     <>
       <Cabecalho
-        titulo="Faltas, atrasos e bônus"
-        subtitulo="Registre as ocorrências do cartão ponto; o bônus por assiduidade é calculado sozinho"
+        titulo="Ocorrências e bônus"
+        subtitulo="Faltas, atrasos, atestados, folha de justificativas e bônus por assiduidade em um só lugar"
         acoes={
-          <Botao onClick={() => setEditando('nova')}>
-            <Plus size={16} /> Nova ocorrência
-          </Botao>
+          podeLancar ? (
+            <Botao onClick={() => setEditando('nova')}>
+              <Plus size={16} /> Nova ocorrência
+            </Botao>
+          ) : undefined
         }
       />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200">
         <div className="flex gap-6 text-sm">
-          {(
-            [
-              ['ocorrencias', 'Ocorrências'],
-              ['bonus', 'Bônus do mês'],
-            ] as const
-          ).map(([k, r]) => (
+          {abas.map(([k, r]) => (
             <button
               key={k}
               onClick={() => setParams(k === 'ocorrencias' ? {} : { aba: k })}
@@ -84,14 +94,38 @@ export default function Ausencias() {
           ))}
         </div>
         <div className="pb-1">
-          <SeletorMes mes={mes} onMudar={setMes} />
+          {aba === 'historico' ? <SeletorTolerancia /> : <SeletorMes mes={mes} onMudar={setMes} />}
         </div>
       </div>
 
-      {aba === 'ocorrencias' ? <Ocorrencias mes={mes} onEditar={setEditando} /> : <BonusMes mes={mes} />}
+      {aba === 'ocorrencias' && <AbaOcorrencias mes={mes} podeFolha={podeFolha} podeLancar={podeLancar} onEditar={setEditando} />}
+      {aba === 'bonus' && <BonusMes mes={mes} />}
+      {aba === 'historico' && <HistoricoOcorrencias />}
 
-      <FormOcorrencia aberto={editando !== null} atual={editando === 'nova' ? null : editando} onFechar={() => setEditando(null)} />
+      <FormOcorrencia aberto={editando !== null} atual={editando === 'nova' ? null : editando} onFechar={() => setEditando(null)} onSalvo={(m) => setMes(m)} />
     </>
+  )
+}
+
+/** Folha do mês para quem tem o módulo de ponto; quem só lança vê a lista de lançamentos */
+function AbaOcorrencias({ mes, podeFolha, podeLancar, onEditar }: { mes: string; podeFolha: boolean; podeLancar: boolean; onEditar: (a: Ausencia) => void }) {
+  const { rows: ausencias } = useTabela<Ausencia>('ausencias')
+  const { rows: funcionarios } = useTabela<Funcionario>('funcionarios')
+  const nome = (id: string) => funcionarios.find((f) => f.id === id)?.nome ?? '—'
+
+  if (!podeFolha) return <Lancamentos mes={mes} onEditar={onEditar} />
+
+  const acoesManual = (o: Ocorrencia) => {
+    const a = ausencias.find((x) => x.funcionarioId === o.funcionarioId && x.inicio <= o.data && x.fim >= o.data && tiposNaFolha[x.tipo])
+    return a ? <AcoesLancamento a={a} nome={nome(a.funcionarioId)} onEditar={onEditar} /> : null
+  }
+
+  return (
+    <FolhaOcorrencias
+      mes={mes}
+      acoesManual={podeLancar ? acoesManual : undefined}
+      lancamentos={podeLancar ? (visiveis) => <Lancamentos mes={mes} onEditar={onEditar} ocultar={visiveis} /> : undefined}
+    />
   )
 }
 
@@ -106,27 +140,51 @@ function descricaoHoras(a: Ausencia) {
   return partes.join(' · ')
 }
 
-function Ocorrencias({ mes, onEditar }: { mes: string; onEditar: (a: Ausencia) => void }) {
+function AcoesLancamento({ a, nome, onEditar }: { a: Ausencia; nome: string; onEditar: (a: Ausencia) => void }) {
+  async function excluir() {
+    if (!confirm(`Excluir a ocorrência de ${nome} em ${dataBR(a.inicio)}?`)) return
+    if (a.anexo) await apagarArquivo(a.anexo).catch(() => {})
+    await remover('ausencias', a.id)
+  }
+
+  return (
+    <div className="flex gap-1">
+      {a.anexo && (
+        <Botao variante="fantasma" className="px-2 py-1" onClick={() => abrirDocumento(a.anexo!)} title="Ver anexo">
+          <Paperclip size={14} />
+        </Botao>
+      )}
+      <Botao variante="fantasma" className="px-2 py-1" onClick={() => onEditar(a)} aria-label="Editar">
+        <Pencil size={14} />
+      </Botao>
+      <Botao variante="fantasma" className="px-2 py-1" onClick={excluir} aria-label="Excluir">
+        <Trash2 size={14} />
+      </Botao>
+    </div>
+  )
+}
+
+/** Lançamentos do mês. Com `ocultar`, mostra só o que não está na lista da folha (atestados, licenças etc.) */
+function Lancamentos({ mes, onEditar, ocultar }: { mes: string; onEditar: (a: Ausencia) => void; ocultar?: Ocorrencia[] }) {
   const { rows: ausencias, carregando } = useTabela<Ausencia>('ausencias')
   const { rows: funcionarios } = useTabela<Funcionario>('funcionarios')
   const nome = (id: string) => funcionarios.find((f) => f.id === id)?.nome ?? '—'
 
   const lista = ausencias
     .filter((a) => a.inicio.slice(0, 7) <= mes && a.fim.slice(0, 7) >= mes)
+    .filter((a) => !ocultar?.some((o) => o.origem === 'manual' && o.funcionarioId === a.funcionarioId && o.data >= a.inicio && o.data <= a.fim))
     .sort((a, b) => b.inicio.localeCompare(a.inicio))
 
-  async function abrirAnexo(a: Ausencia) {
-    if (a.anexo) await abrirDocumento(a.anexo)
-  }
-
-  async function excluir(a: Ausencia) {
-    if (!confirm(`Excluir a ocorrência de ${nome(a.funcionarioId)} em ${dataBR(a.inicio)}?`)) return
-    if (a.anexo) await apagarArquivo(a.anexo).catch(() => {})
-    await remover('ausencias', a.id)
-  }
+  if (ocultar && lista.length === 0) return null
 
   return (
-    <Cartao>
+    <Cartao className={ocultar ? 'mt-4' : undefined}>
+      {ocultar && (
+        <div className="border-b border-gray-100 px-4 py-3">
+          <span className="font-semibold">Outros lançamentos do mês</span>
+          <span className="ml-2 text-xs text-gray-500">atestados, licenças e atrasos dentro da tolerância, que não vão para a folha</span>
+        </div>
+      )}
       {!carregando && lista.length === 0 && <Vazio>Nenhuma ocorrência neste mês.</Vazio>}
       <ul className="divide-y divide-gray-100">
         {lista.map((a) => (
@@ -141,19 +199,7 @@ function Ocorrencias({ mes, onEditar }: { mes: string; onEditar: (a: Ausencia) =
               {a.observacao && <div className="text-xs text-gray-500">{a.observacao}</div>}
             </div>
             <Selo cor={a.tipo === 'falecimento' ? 'cinza' : a.tipo === 'atraso' || a.tipo === 'saida_antecipada' ? 'amarelo' : 'vermelho'}>{nomesTipo[a.tipo]}</Selo>
-            <div className="flex gap-1">
-              {a.anexo && (
-                <Botao variante="fantasma" className="px-2 py-1" onClick={() => abrirAnexo(a)} title="Ver anexo">
-                  <Paperclip size={14} />
-                </Botao>
-              )}
-              <Botao variante="fantasma" className="px-2 py-1" onClick={() => onEditar(a)} aria-label="Editar">
-                <Pencil size={14} />
-              </Botao>
-              <Botao variante="fantasma" className="px-2 py-1" onClick={() => excluir(a)} aria-label="Excluir">
-                <Trash2 size={14} />
-              </Botao>
-            </div>
+            <AcoesLancamento a={a} nome={nome(a.funcionarioId)} onEditar={onEditar} />
           </li>
         ))}
       </ul>
@@ -167,6 +213,10 @@ function BonusMes({ mes }: { mes: string }) {
   const { rows: ausencias } = useTabela<Ausencia>('ausencias')
   const { rows: funcionarios } = useTabela<Funcionario>('funcionarios')
   const { rows: pontos } = useTabela<CartaoPontoSalvo>('pontos')
+  const { rows: marcas } = useTabela<Justificativa>('justificativas')
+  const { pode } = useAuth()
+  // O banco de dados só libera as marcações para estes módulos
+  const semMarcas = !pode('ponto') && !pode('fechamento') && !pode('funcionarios')
   const config = useConfig()
   const [copiado, setCopiado] = useState(false)
   const temCartao = pontos.some((p) => p.mes === mes)
@@ -174,10 +224,10 @@ function BonusMes({ mes }: { mes: string }) {
   const linhas = useMemo(
     () =>
       funcionarios
-        .map((f) => ({ f, r: bonusDoMes(f, ausencias, mes, config, pontos.find((p) => p.funcionarioId === f.id && p.mes === mes)) }))
+        .map((f) => ({ f, r: bonusDoMes(f, ausencias, mes, config, pontos.find((p) => p.funcionarioId === f.id && p.mes === mes), marcas) }))
         .filter((x) => x.r.status !== 'fora')
         .sort((a, b) => a.f.nome.localeCompare(b.f.nome)),
-    [funcionarios, ausencias, pontos, mes, config],
+    [funcionarios, ausencias, pontos, marcas, mes, config],
   )
   const recebem = linhas.filter((x) => x.r.status === 'recebe')
   const total = recebem.reduce((s, x) => s + x.r.valor, 0)
@@ -194,6 +244,11 @@ function BonusMes({ mes }: { mes: string }) {
 
   return (
     <>
+      {semMarcas && (
+        <div className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          Seu acesso não inclui as marcações de "Usou banco de horas", então este cálculo e a planilha podem mostrar como perdido um bônus que foi mantido. Confira com quem tem acesso ao cartão ponto antes de enviar.
+        </div>
+      )}
       {temCartao ? (
         <p className="mb-3 text-sm text-gray-600">Calculado pelo cartão ponto importado, mais atestados e licenças registrados em Ocorrências.</p>
       ) : (
@@ -216,7 +271,7 @@ function BonusMes({ mes }: { mes: string }) {
           <div className="text-2xl font-bold"><Oculto>{brl(total)}</Oculto></div>
         </Cartao>
       </div>
-      <CartaoBeneficio funcionarios={funcionarios} ausencias={ausencias} pontos={pontos} config={config} mes={mes} nomeMes={nomeMes(mes)} />
+      <CartaoBeneficio funcionarios={funcionarios} ausencias={ausencias} pontos={pontos} marcas={marcas} config={config} mes={mes} nomeMes={nomeMes(mes)} />
       <Cartao>
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
           <span className="text-sm text-gray-500">
@@ -250,7 +305,7 @@ function BonusMes({ mes }: { mes: string }) {
         </ul>
       </Cartao>
       <p className="mt-3 text-xs text-gray-500">
-        Faltas justificadas e atestados também fazem perder o bônus; falecimento (nojo) não conta. Horas cobertas por saldo que já existia no banco de horas não contam.
+        Faltas justificadas e atestados também fazem perder o bônus; falecimento (nojo) não conta. Horas cobertas por saldo que já existia no banco de horas não contam, e os dias marcados como "Usou banco de horas" em Ocorrências não fazem perder o bônus.
       </p>
     </>
   )
@@ -258,7 +313,7 @@ function BonusMes({ mes }: { mes: string }) {
 
 // ---------------------------------------------------------------- formulário
 
-function FormOcorrencia({ aberto, atual, onFechar }: { aberto: boolean; atual: Ausencia | null; onFechar: () => void }) {
+function FormOcorrencia({ aberto, atual, onFechar, onSalvo }: { aberto: boolean; atual: Ausencia | null; onFechar: () => void; onSalvo: (mes: string) => void }) {
   const { rows: funcionarios } = useTabela<Funcionario>('funcionarios')
   const [a, setA] = useState<Ausencia>(() => nova())
   const [diaInteiro, setDiaInteiro] = useState(true)
@@ -311,6 +366,7 @@ function FormOcorrencia({ aberto, atual, onFechar }: { aberto: boolean; atual: A
       return
     }
     setSalvando(false)
+    onSalvo(reg.inicio.slice(0, 7))
     onFechar()
   }
 

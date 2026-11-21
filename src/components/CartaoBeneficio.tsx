@@ -3,14 +3,15 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { salvarNoComputador } from '../lib/arquivos'
 import { linhasCartao, planilhaCartao, textoTabela } from '../lib/beneficios'
+import type { MarcaBanco } from '../lib/bonus'
 import { brl } from '../lib/clt'
 import type { Ausencia, CartaoPontoSalvo, ConfigEmpresa, Funcionario } from '../lib/types'
 import { Botao, Cartao, Oculto } from './ui'
 
 /** Prévia e download da planilha do cartão benefício do mês */
-export function CartaoBeneficio(props: { funcionarios: Funcionario[]; ausencias: Ausencia[]; pontos: CartaoPontoSalvo[]; config: ConfigEmpresa; mes: string; nomeMes: string }) {
-  const { funcionarios, ausencias, pontos, config, mes, nomeMes } = props
-  const linhas = useMemo(() => linhasCartao(funcionarios, ausencias, pontos, config, mes), [funcionarios, ausencias, pontos, config, mes])
+export function CartaoBeneficio(props: { funcionarios: Funcionario[]; ausencias: Ausencia[]; pontos: CartaoPontoSalvo[]; marcas: MarcaBanco[]; config: ConfigEmpresa; mes: string; nomeMes: string }) {
+  const { funcionarios, ausencias, pontos, marcas, config, mes, nomeMes } = props
+  const linhas = useMemo(() => linhasCartao(funcionarios, ausencias, pontos, config, mes, marcas), [funcionarios, ausencias, pontos, config, mes, marcas])
   const [copiado, setCopiado] = useState(false)
   const soma = (k: 'alimentacao' | 'mobilidade' | 'cultura') => linhas.reduce((s, l) => s + l[k], 0)
   const semCpf = linhas.filter((l) => !l.cpf)

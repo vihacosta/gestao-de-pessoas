@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bonusDoMes } from './bonus'
-import type { Ausencia, ConfigEmpresa, Funcionario } from './types'
+import type { Ausencia, CartaoPontoSalvo, ConfigEmpresa, Funcionario } from './types'
 
 const cfg: ConfigEmpresa = { id: 'empresa', valorBonus: 100, bonusLimiteDia: 4, bonusLimiteMes: 4, diasExperiencia: 90 }
 const ana: Funcionario = { id: 'a', nome: 'Ana', cpf: '', cargo: '', tipo: 'clt', dataAdmissao: '2025-01-06', salarios: [] }
@@ -49,5 +49,42 @@ describe('bônus por assiduidade', () => {
 
   it('ocorrências de outros meses não contam', () => {
     expect(mes([aus({ tipo: 'atestado', inicio: '2026-09-29', fim: '2026-09-30' })]).status).toBe('recebe')
+  })
+
+  describe('marcação "Usou banco de horas"', () => {
+    const marca = (data: string, funcionarioId = 'a') => ({ funcionarioId, data, usoBanco: true })
+    const dia = (data: string, faltas: number, extras = 0) => ({ data, faltas, extras, batidas: [], cargaHoraria: 528, trabalhado: 528 - faltas })
+    const cartao = (dias: ReturnType<typeof dia>[], saldoAnterior = 0) =>
+      ({ id: 'c', funcionarioId: 'a', mes: '2026-10', nomeNoCartao: 'Ana', dias, saldoAnterior, saldoTotal: 0, caminho: '', importadoEm: '' }) as unknown as CartaoPontoSalvo
+
+    it('protege falta lançada à mão', () => {
+      const falta = [aus({ tipo: 'falta_injustificada', horas: 4 })]
+      expect(bonusDoMes(ana, falta, '2026-10', cfg, undefined, [marca('2026-10-05')])).toMatchObject({ status: 'recebe', horasNaoCompensadas: 0 })
+    })
+
+    it('não vale para outra pessoa, outro dia ou atestado', () => {
+      const falta = [aus({ tipo: 'falta_injustificada', horas: 4 })]
+      expect(bonusDoMes(ana, falta, '2026-10', cfg, undefined, [marca('2026-10-05', 'b')]).status).toBe('perde')
+      expect(bonusDoMes(ana, falta, '2026-10', cfg, undefined, [marca('2026-10-06')]).status).toBe('perde')
+      expect(bonusDoMes(ana, [aus({ tipo: 'atestado' })], '2026-10', cfg, undefined, [marca('2026-10-05')]).status).toBe('perde')
+    })
+
+    it('no cartão, com saldo suficiente, protege sem aviso', () => {
+      const r = bonusDoMes(ana, [], '2026-10', cfg, cartao([dia('2026-10-05', 300)], 300), [marca('2026-10-05')])
+      expect(r).toMatchObject({ status: 'recebe', avisos: [], horasNaoCompensadas: 0 })
+    })
+
+    it('no cartão, com saldo menor, mantém o bônus e avisa para conferir', () => {
+      const r = bonusDoMes(ana, [], '2026-10', cfg, cartao([dia('2026-10-05', 300)], 60), [marca('2026-10-05')])
+      expect(r.status).toBe('recebe')
+      expect(r.avisos[0]).toContain('Uso do banco marcado em 05/10')
+    })
+
+    it('o saldo usado no dia marcado não cobre outra ausência', () => {
+      const dias = [dia('2026-10-05', 180), dia('2026-10-06', 240)]
+      const r = bonusDoMes(ana, [], '2026-10', cfg, cartao(dias, 180), [marca('2026-10-05')])
+      expect(r.status).toBe('perde')
+      expect(r.motivos.join(' ')).toContain('06/10')
+    })
   })
 })

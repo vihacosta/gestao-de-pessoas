@@ -14,8 +14,8 @@ export const MODULOS: { id: Modulo; rotulo: string; descricao: string }[] = [
   { id: 'ferias', rotulo: 'Férias', descricao: 'Saldos, pedidos e férias coletivas' },
   { id: 'documentos', rotulo: 'Documentos', descricao: 'Modelos e geração de documentos' },
   { id: 'holerites', rotulo: 'Holerites', descricao: 'Holerites e cartões assinados, com os valores dos holerites' },
-  { id: 'ponto', rotulo: 'Cartão ponto e ocorrências', descricao: 'Cartões, faltas, atrasos e folha de justificativas' },
-  { id: 'ausencias', rotulo: 'Faltas e bônus', descricao: 'Atestados, licenças, bônus e cartão benefício' },
+  { id: 'ponto', rotulo: 'Cartão ponto e folha de ocorrências', descricao: 'Cartões, folha de justificativas e histórico por pessoa' },
+  { id: 'ausencias', rotulo: 'Lançamentos e bônus', descricao: 'Lançar faltas, atestados e licenças, bônus e cartão benefício' },
   { id: 'fechamento', rotulo: 'Fechamento mensal', descricao: 'Pacote do mês, inclusive holerites e atestados' },
   { id: 'configuracoes', rotulo: 'Configurações', descricao: 'Valores e regras da empresa' },
   { id: 'valores', rotulo: 'Salários e valores', descricao: 'Salários, banco e Pix, descontos e estimativa de rescisão' },
@@ -45,6 +45,14 @@ export function moduloDaRota(caminho: string): Modulo | null {
     configuracoes: 'configuracoes',
   }
   return mapa[primeiro] ?? null
+}
+
+/** Módulos que abrem cada tela. A página de ocorrências e bônus (e seus endereços antigos) abre com qualquer um dos dois. */
+export function modulosDaRota(caminho: string): Modulo[] {
+  const combinada = caminho === '/ausencias' || caminho === '/justificativas' || caminho === '/ponto/ocorrencias'
+  if (combinada) return ['ponto', 'ausencias']
+  const m = moduloDaRota(caminho)
+  return m ? [m] : []
 }
 
 /** Quem pode alterar um documento guardado, conforme o tipo */

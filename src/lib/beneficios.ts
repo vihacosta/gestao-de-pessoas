@@ -4,7 +4,7 @@
  */
 import { endOfMonth } from 'date-fns'
 import PizZip from 'pizzip'
-import { bonusDoMes, type ResultadoBonus } from './bonus'
+import { bonusDoMes, type MarcaBanco, type ResultadoBonus } from './bonus'
 import { d, iso } from './clt'
 import type { Ausencia, CartaoPontoSalvo, ConfigEmpresa, Funcionario } from './types'
 
@@ -34,13 +34,13 @@ export interface LinhaCartao {
 const maiusculoSemAcento = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim()
 
 /** Uma linha por pessoa ativa no mês (menos quem está marcado para não entrar), em ordem de nome */
-export function linhasCartao(funcionarios: Funcionario[], ausencias: Ausencia[], pontos: CartaoPontoSalvo[], c: ConfigEmpresa, mes: string): LinhaCartao[] {
+export function linhasCartao(funcionarios: Funcionario[], ausencias: Ausencia[], pontos: CartaoPontoSalvo[], c: ConfigEmpresa, mes: string, marcas: MarcaBanco[] = []): LinhaCartao[] {
   const ini = `${mes}-01`
   const fim = iso(endOfMonth(d(ini)))
   return funcionarios
     .filter((f) => !f.semCartaoBeneficio && f.dataAdmissao <= fim && (!f.dataDemissao || f.dataDemissao >= ini))
     .map((f) => {
-      const bonus = bonusDoMes(f, ausencias, mes, c, pontos.find((p) => p.funcionarioId === f.id && p.mes === mes))
+      const bonus = bonusDoMes(f, ausencias, mes, c, pontos.find((p) => p.funcionarioId === f.id && p.mes === mes), marcas)
       return {
         funcionario: f,
         nome: maiusculoSemAcento(f.nome),

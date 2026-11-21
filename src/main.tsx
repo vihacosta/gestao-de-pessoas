@@ -17,12 +17,15 @@ import Configuracoes from './pages/Configuracoes'
 import Ausencias from './pages/Ausencias'
 import CartaoPontoPage from './pages/CartaoPonto'
 import Holerites from './pages/Holerites'
-import Justificativas from './pages/Justificativas'
 
-/** Endereço antigo da tela, mantendo o mês escolhido */
+/** Endereços antigos da tela de ocorrências, mantendo o mês e o histórico */
 function RedirecionarOcorrencias() {
   const { search } = useLocation()
-  return <Navigate to={`/ponto/ocorrencias${search}`} replace />
+  const params = new URLSearchParams(search)
+  if (params.get('ver') === 'historico') params.set('aba', 'historico')
+  params.delete('ver')
+  const destino = params.toString()
+  return <Navigate to={`/ausencias${destino ? `?${destino}` : ''}`} replace />
 }
 
 function Rotas() {
@@ -43,7 +46,7 @@ function Rotas() {
         <Route path="holerites" element={<Holerites />} />
         <Route path="justificativas" element={<RedirecionarOcorrencias />} />
         <Route path="ponto" element={<CartaoPontoPage />} />
-        <Route path="ponto/ocorrencias" element={<Justificativas />} />
+        <Route path="ponto/ocorrencias" element={<RedirecionarOcorrencias />} />
         <Route path="ausencias" element={<Ausencias />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="configuracoes" element={<Configuracoes />} />
