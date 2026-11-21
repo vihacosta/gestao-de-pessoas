@@ -66,6 +66,7 @@ Status: requisitos definidos; falta decidir onde o sistema vai rodar
 ### 7. Fechamento mensal
 - Pacote por mês com os documentos da folha (holerites, pontos, atestados, justificativas)
 - Exportar/compartilhar com a contabilidade em poucos cliques
+- **Feito (tela Fechamento mensal):** por mês, mostra o que está guardado e o que falta (holerites e cartões assinados, comprovantes de atestados e licenças, folha de justificativas) e baixa um .zip com uma pasta por tipo e uma planilha de resumo, sem salários nem CPF. Dá para baixar com pendências, que ficam listadas no resumo. O envio à contabilidade continua manual. Regras em `src/lib/fechamento.ts`.
 
 ### 8. Cálculos e alertas
 - Férias + 1/3

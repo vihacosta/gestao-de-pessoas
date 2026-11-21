@@ -26,7 +26,7 @@ export const areas = [
   { to: '/holerites', rotulo: 'Holerites', icone: FolderArchive },
   { to: '/ponto', rotulo: 'Cartão ponto', icone: Clock, fim: true, submenu: [{ to: '/ponto/ocorrencias', rotulo: 'Ocorrências', icone: ClipboardList }] },
   { to: '/ausencias', rotulo: 'Faltas e bônus', icone: Stethoscope },
-  { to: '/em-breve/fechamento', rotulo: 'Fechamento mensal', icone: Receipt, embreve: true },
+  { to: '/fechamento', rotulo: 'Fechamento mensal', icone: Receipt },
   { to: '/usuarios', rotulo: 'Usuários', icone: UserCog },
   { to: '/configuracoes', rotulo: 'Configurações', icone: Settings },
 ]
@@ -58,7 +58,6 @@ export default function Layout() {
               >
                 <a.icone size={18} />
                 <span className="flex-1">{a.rotulo}</span>
-                {a.embreve && <span className="text-[10px] uppercase text-gray-400">em breve</span>}
               </NavLink>
               {a.submenu?.map((s) => (
                 <NavLink

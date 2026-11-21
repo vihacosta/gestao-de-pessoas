@@ -11,7 +11,7 @@ import Funcionarios from './pages/Funcionarios'
 import FuncionarioForm from './pages/FuncionarioForm'
 import FuncionarioDetalhe from './pages/FuncionarioDetalhe'
 import FeriasPage from './pages/Ferias'
-import EmBreve from './pages/EmBreve'
+import Fechamento from './pages/Fechamento'
 import Documentos from './pages/Documentos'
 import Configuracoes from './pages/Configuracoes'
 import Ausencias from './pages/Ausencias'
@@ -47,7 +47,7 @@ function Rotas() {
         <Route path="ausencias" element={<Ausencias />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="configuracoes" element={<Configuracoes />} />
-        <Route path="em-breve/:area" element={<EmBreve />} />
+        <Route path="fechamento" element={<Fechamento />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

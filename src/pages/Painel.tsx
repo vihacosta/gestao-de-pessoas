@@ -246,7 +246,6 @@ export default function Painel() {
                 <Link to={a.to} className="flex items-center gap-3 px-4 py-3 text-sm">
                   <a.icone size={18} className="text-gray-500" />
                   <span className="flex-1">{a.rotulo}</span>
-                  {a.embreve && <span className="text-[10px] uppercase text-gray-400">em breve</span>}
                 </Link>
               </li>,
               ...(a.submenu ?? []).map((s) => (
