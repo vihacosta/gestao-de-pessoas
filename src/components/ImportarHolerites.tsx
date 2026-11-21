@@ -4,15 +4,16 @@ import { useState } from 'react'
 import { useAuth } from '../auth'
 import { brl, d, iso, salarioEm } from '../lib/clt'
 import { guardarDocumento } from '../lib/documentos'
-import { lerHolerites, type HoleriteLido } from '../lib/holerite'
+import { lerHolerites, tituloHolerite, type HoleriteLido } from '../lib/holerite'
 import { lerTextoPdf, separarPaginas } from '../lib/pdf'
 import { salvar, useTabela } from '../lib/store'
 import type { DocumentoGuardado, Funcionario } from '../lib/types'
 import { encontrarFuncionario } from '../pages/CartaoPonto'
+import { ImportarHoleritesLote } from './ImportarHoleritesLote'
 import { Botao, Cartao, Selecao, Oculto } from './ui'
 
 const mesBR = (m: string) => `${m.slice(5)}/${m.slice(0, 4)}`
-const tituloDe = (h: HoleriteLido) => `Holerite ${h.tipo.toLowerCase() === 'mensal' ? '' : h.tipo.toLowerCase() + ' '}${mesBR(h.mes)}`
+const tituloDe = tituloHolerite
 
 /**
  * Importa o PDF de holerites da contabilidade: separa por funcionário (pelo CPF),
@@ -28,11 +29,19 @@ export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const [lote, setLote] = useState<File[] | null>(null)
 
-  async function escolher(f: File | null) {
+  async function escolher(selecionados: FileList | null) {
     setErro(null)
     setMsg(null)
     setLidos(null)
+    setLote(null)
+    const todos = [...(selecionados ?? [])]
+    if (todos.length > 1) {
+      setLote(todos)
+      return
+    }
+    const f = todos[0]
     if (!f) return
     setOcupado('Lendo os holerites…')
     try {
@@ -93,11 +102,12 @@ export function ImportarHolerites({ onMes }: { onMes: (mes: string) => void }) {
       <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-gray-300 p-4 hover:border-marca-500 hover:bg-marca-50">
         <FileUp className="shrink-0 text-marca-600" />
         <span>
-          <span className="block font-medium">Importar o PDF de holerites da contabilidade</span>
-          <span className="text-xs text-gray-500">Separa por colaborador pelo CPF, guarda na ficha de cada um e confere o salário com o cadastro</span>
+          <span className="block font-medium">Importar PDFs de holerites da contabilidade</span>
+          <span className="text-xs text-gray-500">Escolha um ou vários arquivos: separa por colaborador pelo CPF, guarda na ficha de cada um e confere o salário com o cadastro</span>
         </span>
-        <input type="file" accept="application/pdf" className="hidden" onChange={(e) => escolher(e.target.files?.[0] ?? null)} onClick={(e) => ((e.target as HTMLInputElement).value = '')} />
+        <input type="file" multiple accept="application/pdf" className="hidden" onChange={(e) => escolher(e.target.files)} onClick={(e) => ((e.target as HTMLInputElement).value = '')} />
       </label>
+      {lote && <ImportarHoleritesLote key={lote.map((f) => f.name).join('|')} arquivos={lote} onFechar={() => setLote(null)} />}
       {ocupado && <p className="mt-3 text-sm text-gray-600">{ocupado}</p>}
       {erro && <p className="mt-3 text-sm text-red-600">{erro}</p>}
       {msg && <p className="mt-3 text-sm text-green-700">{msg}</p>}

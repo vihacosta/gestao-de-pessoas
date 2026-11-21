@@ -61,7 +61,8 @@ function lerPagina(itens: TextoPosicionado[]): Omit<HoleriteLido, 'paginas'> | n
   const iTitulo = ls.findIndex((l) => /HOLERIT/i.test(l.itens.map((i) => i.str).join(' ')))
   if (iTitulo < 0) return null
   const titulo = semAcento(ls[iTitulo].itens.map((i) => i.str).join(' ')).toUpperCase()
-  const m = titulo.match(/HOLERITH?E?\s*-\s*(.+?)\s+DE\s+([A-Z]+)\s*\/\s*(\d{4})/)
+  // "MENSAL de OUTUBRO/2026" ou "13º SALÁRIO - 1ª PARCELA em NOVEMBRO/2025"
+  const m = titulo.match(/HOLERITH?E?\s*-\s*(.+?)\s+(?:DE|EM)\s+([A-Z]+)\s*\/\s*(\d{4})/)
   if (!m) return null
   const mesN = MESES.indexOf(m[2]) + 1
   if (!mesN) return null
@@ -140,6 +141,10 @@ export function lerHolerites(paginas: TextoPosicionado[][]): HoleriteLido[] {
   if (!lista.length) throw new Error('Não encontrei holerites neste PDF. Confira se é o arquivo de holerites da contabilidade.')
   return lista
 }
+
+/** Título do documento guardado: "Holerite 10/2026" ou "Holerite 13º salario - 1ª parcela 11/2025" */
+export const tituloHolerite = (h: Pick<HoleriteLido, 'tipo' | 'mes'>) =>
+  `Holerite ${h.tipo.toLowerCase() === 'mensal' ? '' : h.tipo.toLowerCase() + ' '}${h.mes.slice(5)}/${h.mes.slice(0, 4)}`
 
 /** Verbas que parecem ser o bônus por assiduidade */
 export const verbaBonus = (h: HoleriteLido) => h.creditos.filter((v) => /ASSIDU|BONUS|B[ÔO]NUS|PR[ÊE]MIO|GRATIFICA/i.test(semAcento(v.descricao)))
