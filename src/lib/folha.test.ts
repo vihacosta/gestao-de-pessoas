@@ -81,6 +81,13 @@ describe('vale transporte', () => {
     const registros = [{ id: idRegistroFolha('a', '2026-10'), mes: '2026-10', funcionarioId: 'a', recebeVT: false }]
     expect(uma({ registros }, comPasse)).toMatchObject({ recebeVT: false, valeTransporte: 0 })
   })
+  it('quem marcou Não fica sem vale, mesmo com registro antigo do mês', () => {
+    const registros = [{ id: idRegistroFolha('a', '2026-10'), mes: '2026-10', funcionarioId: 'a', recebeVT: true }]
+    expect(uma({ registros }, func({ usaValeTransporte: false }))).toMatchObject({ usaVT: false, recebeVT: false, valeTransporte: 0 })
+  })
+  it('Sim sem passe cadastrado não calcula valor', () => {
+    expect(uma({}, func({ usaValeTransporte: true }))).toMatchObject({ usaVT: true, temPasse: false, recebeVT: false, valeTransporte: 0 })
+  })
   it('sem passe cadastrado começa em Não', () => {
     expect(uma().recebeVT).toBe(false)
   })

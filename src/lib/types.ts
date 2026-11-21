@@ -47,6 +47,8 @@ export interface Funcionario {
   salarios: Salario[]
   /** Valor fixo mensal de Cultura no cartão benefício (só algumas pessoas) */
   beneficioCultura?: number
+  /** Usa vale transporte? Vazio = ainda não foi definido */
+  usaValeTransporte?: boolean
   /** Vale transporte: quantos passes a pessoa usa por dia */
   passesDia?: number
   /** Vale transporte: valor de cada passe */

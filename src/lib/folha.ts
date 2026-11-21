@@ -9,6 +9,7 @@ import type { MarcaBanco } from './bonus'
 import { d, iso, salarioEm } from './clt'
 import type { Aquisicao } from './aquisicoes'
 import { gruposDeErros, type ErroFuncionario } from './descontoErros'
+import { usaValeTransporte } from './documentosPessoais'
 import type { Ausencia, CartaoPontoSalvo, ConfigEmpresa, Funcionario } from './types'
 
 /** O que é digitado na folha. Por pessoa: id `${funcionarioId}-${mes}`. Dias úteis do mês: id `dias-${mes}`. */
@@ -58,6 +59,10 @@ export interface LinhaFolha {
   erros: number
   /** O valor de erros ainda não foi marcado como descontado */
   errosPendentes: boolean
+  /** Sim/Não da ficha (vazio = falta definir) */
+  usaVT?: boolean
+  /** Usa, tem passe e valor cadastrados */
+  temPasse: boolean
   recebeVT: boolean
   valeTransporte: number
   descontoVA: number
@@ -118,7 +123,9 @@ export function montarFolha(args: {
       const descontoVA = alimentacao > 0 ? centavos(alimentacao * PERCENTUAL_DESCONTO_VA) : 0
       const comissao = r?.comissao ?? 0
       const adiantamento = r?.adiantamento ?? 0
-      const recebeVT = r?.recebeVT ?? (f.passesDia ?? 0) > 0
+      const usaVT = usaValeTransporte(f)
+      const temPasse = usaVT === true && (f.passesDia ?? 0) > 0 && (f.valorPasse ?? 0) > 0
+      const recebeVT = temPasse && (r?.recebeVT ?? true)
 
       return {
         funcionario: f,
@@ -127,6 +134,8 @@ export function montarFolha(args: {
         comprasAtrasadas,
         erros: valorErros,
         errosPendentes: pendentes.length > 0,
+        usaVT,
+        temPasse,
         recebeVT,
         valeTransporte: recebeVT ? valorValeTransporte(f, diasUteis) : 0,
         descontoVA,

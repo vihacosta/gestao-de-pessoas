@@ -45,6 +45,28 @@ export function Selecao(p: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...p} className={cx(estiloInput, p.className)} />
 }
 
+/** Botão duplo Sim/Não. Sem valor, nenhum dos dois fica marcado. */
+export function SimNao({ valor, onMudar, disabled, rotulo }: { valor?: boolean; onMudar: (v: boolean) => void; disabled?: boolean; rotulo: string }) {
+  const opcao = (v: boolean, texto: string) => (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-pressed={valor === v}
+      aria-label={`${rotulo}: ${texto}`}
+      onClick={() => valor !== v && onMudar(v)}
+      className={cx('px-2 py-0.5 text-xs font-medium disabled:cursor-not-allowed', valor === v ? (v ? 'bg-marca-600 text-white' : 'bg-gray-200 text-gray-700') : 'bg-white text-gray-500 hover:bg-gray-50')}
+    >
+      {texto}
+    </button>
+  )
+  return (
+    <span className="inline-flex overflow-hidden rounded-md border border-gray-300">
+      {opcao(true, 'Sim')}
+      {opcao(false, 'Não')}
+    </span>
+  )
+}
+
 export function Cartao({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cx('rounded-xl border border-gray-200 bg-white', className)}>{children}</div>
 }

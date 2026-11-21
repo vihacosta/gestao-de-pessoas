@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth'
-import { Botao, Cabecalho, Campo, Cartao, Entrada, Selecao } from '../components/ui'
+import { Botao, Cabecalho, Campo, Cartao, Entrada, Selecao, SimNao } from '../components/ui'
+import { comValeTransporte, usaValeTransporte } from '../lib/documentosPessoais'
 import { lerValor } from '../lib/extenso'
 import { hojeISO } from '../lib/hoje'
 import { novoId, salvar, useTabela } from '../lib/store'
-import type { Funcionario } from '../lib/types'
+import type { DocumentoGuardado, Funcionario } from '../lib/types'
 
 function mascaraCPF(v: string) {
   const n = v.replace(/\D/g, '').slice(0, 11)
@@ -43,6 +44,7 @@ export default function FuncionarioForm() {
   const navegar = useNavigate()
   const editaValores = useAuth().podeAlterar('valores')
   const { rows, carregando } = useTabela<Funcionario>('funcionarios')
+  const { rows: documentos } = useTabela<DocumentoGuardado>('documentos')
   const [f, setF] = useState<Funcionario>(vazio)
   const [salarioInicial, setSalarioInicial] = useState('')
   const [salvando, setSalvando] = useState(false)
@@ -58,6 +60,7 @@ export default function FuncionarioForm() {
 
   const set = <K extends keyof Funcionario>(k: K, v: Funcionario[K]) => setF((x) => ({ ...x, [k]: v }))
   const socio = f.tipo === 'socio'
+  const usaVT = usaValeTransporte(f, documentos.filter((d) => d.funcionarioId === f.id))
 
   /** Sócio fica fora de férias e cartão benefício; ao deixar de ser sócio, volta para os dois */
   const mudarTipo = (tipo: Funcionario['tipo']) =>
@@ -188,10 +191,16 @@ export default function FuncionarioForm() {
           {socio ? (
             <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">Sócios ficam fora de folha ponto, holerite, assinaturas, férias, bônus e cartão benefício.</p>
           ) : (
-          <Secao titulo="Cartão benefício e vale transporte">
-            {editaValores && (
+          <>
+          <Secao titulo="Vale transporte">
+            <div className="block">
+              <span className="mb-1 block text-sm font-medium text-gray-700">Usa vale transporte?</span>
+              <SimNao rotulo="Usa vale transporte" valor={usaVT} onMudar={(v) => setF((x) => comValeTransporte(x, v))} />
+              <span className="mt-1 block text-xs text-gray-500">{usaVT ? 'O cartão é enviado em Documentos pessoais, na ficha.' : usaVT === false ? 'Fica fora da folha e dos documentos pendentes.' : 'Escolha Sim ou Não.'}</span>
+            </div>
+            {editaValores && usaVT && (
               <>
-                <Campo rotulo="Passes por dia" dica="Vale transporte. Ex.: 2 (ida e volta). Vazio = não usa.">
+                <Campo rotulo="Passes por dia" dica="Ex.: 2 (ida e volta).">
                   <Entrada type="number" min={0} step={1} value={f.passesDia ?? ''} onChange={(e) => set('passesDia', e.target.value === '' ? undefined : Number(e.target.value))} />
                 </Campo>
                 <Campo rotulo="Valor de cada passe (R$)" dica="A folha multiplica pelos dias úteis do mês.">
@@ -199,6 +208,9 @@ export default function FuncionarioForm() {
                 </Campo>
               </>
             )}
+          </Secao>
+
+          <Secao titulo="Cartão benefício">
             {editaValores && (
               <Campo rotulo="Cultura (R$ por mês)" dica="Valor fixo de Cultura no cartão benefício. Vazio = não recebe.">
                 <Entrada
@@ -219,6 +231,7 @@ export default function FuncionarioForm() {
               Não entra no controle de férias
             </label>
           </Secao>
+          </>
           )}
 
           <Secao titulo="Família, contatos e banco">

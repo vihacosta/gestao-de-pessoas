@@ -13,28 +13,7 @@ import type { Justificativa } from '../lib/justificativas'
 import { remover, salvar, useTabela } from '../lib/store'
 import type { Ausencia, CartaoPontoSalvo, Funcionario } from '../lib/types'
 import { useConfig } from '../pages/Configuracoes'
-import { Botao, Cartao, Entrada, Vazio, cx } from './ui'
-
-function SimNao({ valor, onMudar, disabled, rotulo }: { valor: boolean; onMudar: (v: boolean) => void; disabled?: boolean; rotulo: string }) {
-  const opcao = (v: boolean, texto: string) => (
-    <button
-      type="button"
-      disabled={disabled}
-      aria-pressed={valor === v}
-      aria-label={`${rotulo}: ${texto}`}
-      onClick={() => valor !== v && onMudar(v)}
-      className={cx('px-2 py-0.5 text-xs font-medium disabled:cursor-not-allowed', valor === v ? (v ? 'bg-marca-600 text-white' : 'bg-gray-200 text-gray-700') : 'bg-white text-gray-400 hover:bg-gray-50')}
-    >
-      {texto}
-    </button>
-  )
-  return (
-    <span className="inline-flex overflow-hidden rounded-md border border-gray-300">
-      {opcao(true, 'Sim')}
-      {opcao(false, 'Não')}
-    </span>
-  )
-}
+import { Botao, Cartao, Entrada, SimNao, Vazio, cx } from './ui'
 
 const paraTexto = (v?: number) => (v ? v.toFixed(2).replace('.', ',') : '')
 
@@ -67,7 +46,9 @@ function CampoObs({ valor, onSalvar, disabled, rotulo }: { valor: string; onSalv
 
 /** Folha de pagamento do mês, com as colunas da planilha */
 export function FolhaMes({ mes, tituloMes, ativos }: { mes: string; tituloMes: string; ativos: Funcionario[] }) {
-  const edita = useAuth().podeAlterar('valores')
+  const { podeAlterar } = useAuth()
+  const edita = podeAlterar('valores')
+  const editaCadastro = podeAlterar('funcionarios')
   const config = useConfig()
   const { rows: registros, erro } = useTabela<RegistroFolha>('folha')
   const { rows: erros } = useTabela<ErroFuncionario>('erros')
@@ -171,7 +152,6 @@ export function FolhaMes({ mes, tituloMes, ativos }: { mes: string; tituloMes: s
             <tbody className="divide-y divide-gray-100">
               {linhas.map((l) => {
                 const f = l.funcionario
-                const semPasse = l.recebeVT && !l.valeTransporte
                 return (
                   <tr key={f.id}>
                     <td className="sticky left-0 whitespace-nowrap bg-white px-4 py-2">
@@ -189,13 +169,21 @@ export function FolhaMes({ mes, tituloMes, ativos }: { mes: string; tituloMes: s
                       {l.errosPendentes && <span className="block text-xs text-red-700">a descontar</span>}
                     </td>
                     <td className="whitespace-nowrap px-2 py-1.5 text-center">
-                      <SimNao rotulo={`Vale transporte de ${f.nome}`} valor={l.recebeVT} disabled={!podeEditar} onMudar={(v) => atualizar(f, { recebeVT: v })} />
-                      {semPasse ? (
-                        <Link to={`/funcionarios/${f.id}/editar`} className="block text-xs text-amber-700 underline">
-                          cadastrar passe
-                        </Link>
+                      {l.usaVT === false ? (
+                        <span className="text-xs text-gray-400">Não usa</span>
+                      ) : !l.temPasse ? (
+                        editaCadastro ? (
+                          <Link to={`/funcionarios/${f.id}/editar`} className="text-xs text-amber-700 underline">
+                            {l.usaVT ? 'cadastrar passe' : 'definir'}
+                          </Link>
+                        ) : (
+                          <span className="text-xs text-gray-400">{l.usaVT ? 'sem passe' : 'não definido'}</span>
+                        )
                       ) : (
-                        l.recebeVT && <span className="block text-xs text-gray-600">{din(l.valeTransporte)}</span>
+                        <>
+                          <SimNao rotulo={`Vale transporte de ${f.nome}`} valor={l.recebeVT} disabled={!podeEditar} onMudar={(v) => atualizar(f, { recebeVT: v })} />
+                          {l.recebeVT && <span className="block text-xs text-gray-600">{din(l.valeTransporte)}</span>}
+                        </>
                       )}
                     </td>
                     {cel(l.descontoVA)}

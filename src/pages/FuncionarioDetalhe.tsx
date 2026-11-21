@@ -22,6 +22,7 @@ import { remover, salvar, useTabela } from '../lib/store'
 import { salvarNoComputador } from '../lib/arquivos'
 import { ArquivoFuncionario } from '../components/ArquivoFuncionario'
 import { DocumentosPessoais } from '../components/DocumentosPessoais'
+import { usaValeTransporte } from '../lib/documentosPessoais'
 import { FotoFuncionario } from '../components/FotoFuncionario'
 import { ConferenciaDados } from '../components/ConferenciaDados'
 import { HistoricoOcorrencias } from '../components/HistoricoOcorrencias'
@@ -187,7 +188,7 @@ export default function FuncionarioDetalhe() {
             <Info rotulo="Contato de emergência" valor={[f.contatoEmergencia1, f.contatoEmergencia2].filter(Boolean).join(' · ')} />
             {pode('valores') && <Info rotulo="Pix" valor={f.pix} />}
             {pode('valores') && <Info rotulo="Banco" valor={f.dadosBancarios} />}
-            {pode('valores') && !socio && <Info rotulo="Vale transporte" valor={f.passesDia ? `${f.passesDia} ${f.passesDia === 1 ? 'passe' : 'passes'} por dia de ${brl(f.valorPasse ?? 0)}` : undefined} />}
+            {pode('valores') && !socio && <Info rotulo="Vale transporte" valor={f.passesDia ? `${f.passesDia} ${f.passesDia === 1 ? 'passe' : 'passes'} por dia de ${brl(f.valorPasse ?? 0)}` : usaValeTransporte(f) === false ? 'Não usa' : undefined} />}
             {f.dependentes && (
               <div className="col-span-2 sm:col-span-3">
                 <Info rotulo="Dependentes" valor={f.dependentes} />

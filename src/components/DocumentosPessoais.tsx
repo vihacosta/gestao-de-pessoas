@@ -1,11 +1,11 @@
 import { CheckCircle2, Circle, Eye, MinusCircle, Trash2 } from 'lucide-react'
 import { abrirDocumento, excluirDocumento, guardarDocumento, tamanhoTexto } from '../lib/documentos'
-import { itensPessoais, pendenciasPessoais, situacaoPessoal, type ItemPessoal } from '../lib/documentosPessoais'
+import { comValeTransporte, itensPessoais, pendenciasPessoais, situacaoPessoal, usaValeTransporte, type ItemPessoal } from '../lib/documentosPessoais'
 import { salvar, useTabela } from '../lib/store'
 import type { DocumentoGuardado, Funcionario, TipoDocPessoal } from '../lib/types'
 import { EnviarArquivos } from './EnviarArquivos'
 import { BotaoFoto } from './FotoFuncionario'
-import { Botao, Modulo, Selo, cx } from './ui'
+import { Botao, Modulo, Selo, SimNao, cx } from './ui'
 
 /** Checklist dos documentos pessoais pedidos na admissão, com envio de foto/PDF de cada um */
 export function DocumentosPessoais({ f }: { f: Funcionario }) {
@@ -14,6 +14,7 @@ export function DocumentosPessoais({ f }: { f: Funcionario }) {
   const situacao = situacaoPessoal(f, meus)
   const faltam = pendenciasPessoais(f, meus)
   const socio = f.tipo === 'socio'
+  const usaVT = usaValeTransporte(f, meus)
 
   async function enviar(item: ItemPessoal, arquivos: File[]) {
     const atual = meus.find((d) => d.tipoPessoal === item.tipo)
@@ -37,6 +38,11 @@ export function DocumentosPessoais({ f }: { f: Funcionario }) {
     if (lista.has(tipo)) lista.delete(tipo)
     else lista.add(tipo)
     await salvar('funcionarios', { ...f, docsNaoAplica: [...lista] })
+  }
+
+  async function mudarVT(usa: boolean) {
+    if (!usa && f.passesDia && !confirm('Marcar que não usa vale transporte? Os passes e o valor cadastrados serão apagados.')) return
+    await salvar('funcionarios', comValeTransporte(f, usa))
   }
 
   // sócio não tem checklist de admissão; só mostra se já houver algo guardado
@@ -77,7 +83,7 @@ export function DocumentosPessoais({ f }: { f: Funcionario }) {
               <div className={cx('min-w-48 flex-1', apagado && 'text-gray-400')}>
                 <div className={cx('font-medium', apagado && 'line-through decoration-gray-300')}>{item.nome}</div>
                 <div className="text-xs text-gray-500">
-                  {s === 'dispensado' ? (item.tipo === 'cnh' ? 'Dispensada: já tem RG e CPF' : 'Dispensado: já tem CNH') : s === 'nao_se_aplica' ? 'Não se aplica' : item.dica}
+                  {s === 'dispensado' ? (item.tipo === 'cnh' ? 'Dispensada: já tem RG e CPF' : 'Dispensado: já tem CNH') : s === 'nao_se_aplica' ? (item.tipo === 'vale_transporte' ? 'Não usa vale transporte' : 'Não se aplica') : item.tipo === 'vale_transporte' ? (usaVT ? 'Passes por dia e valor ficam em Editar' : 'Usa vale transporte? Escolha Sim ou Não') : item.dica}
                 </div>
               </div>
 
@@ -105,8 +111,14 @@ export function DocumentosPessoais({ f }: { f: Funcionario }) {
                     Não se aplica
                   </label>
                 )}
+                {item.tipo === 'vale_transporte' && (
+                  <span className="flex items-center gap-1.5 text-xs text-gray-600">
+                    Usa?
+                    <SimNao rotulo="Usa vale transporte" valor={usaVT} onMudar={mudarVT} />
+                  </span>
+                )}
                 {item.tipo === 'foto' && <BotaoFoto f={f} atual={arquivos[0]} />}
-                {s !== 'nao_se_aplica' && item.tipo !== 'foto' && (
+                {s !== 'nao_se_aplica' && item.tipo !== 'foto' && (item.tipo !== 'vale_transporte' || usaVT === true) && (
                   <EnviarArquivos onArquivos={(a) => enviar(item, a)}>
                     {arquivos.length === 0 ? 'Enviar' : item.varios ? 'Adicionar' : 'Substituir'}
                   </EnviarArquivos>

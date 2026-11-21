@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { pendenciasPessoais, situacaoPessoal } from './documentosPessoais'
-import type { DocumentoGuardado, TipoDocPessoal } from './types'
+import { comValeTransporte, pendenciasPessoais, situacaoPessoal, usaValeTransporte } from './documentosPessoais'
+import type { DocumentoGuardado, Funcionario, TipoDocPessoal } from './types'
 
 const doc = (t: TipoDocPessoal): DocumentoGuardado => ({
   id: t,
@@ -42,6 +42,29 @@ describe('documentos pessoais', () => {
   it('"não se aplica" tira filhos e VT das pendências', () => {
     const todos = (['foto', 'ctps', 'cnh', 'estado_civil', 'residencia'] as TipoDocPessoal[]).map(doc)
     expect(pendenciasPessoais({ docsNaoAplica: ['certidao_filhos', 'cpf_filhos', 'vale_transporte'] }, todos)).toEqual([])
+  })
+
+  it('vale transporte: Não tira das pendências, Sim pede o cartão', () => {
+    expect(pendenciasPessoais({ usaValeTransporte: false }, [])).not.toContain('Cartão do Vale Transporte')
+    expect(pendenciasPessoais({ usaValeTransporte: true }, [])).toContain('Cartão do Vale Transporte')
+    expect(pendenciasPessoais({ usaValeTransporte: true }, [doc('vale_transporte')])).not.toContain('Cartão do Vale Transporte')
+  })
+
+  it('cadastro antigo: deduz o Sim/Não do que já existe', () => {
+    expect(usaValeTransporte({})).toBeUndefined()
+    expect(usaValeTransporte({ docsNaoAplica: ['vale_transporte'] })).toBe(false)
+    expect(usaValeTransporte({ passesDia: 2 })).toBe(true)
+    expect(usaValeTransporte({}, [doc('vale_transporte')])).toBe(true)
+  })
+
+  it('marcar Não limpa passes e valor; voltar para Sim libera o documento', () => {
+    const comPasses: Pick<Funcionario, 'docsNaoAplica' | 'passesDia' | 'valorPasse'> = { passesDia: 2, valorPasse: 6 }
+    const nao = comValeTransporte(comPasses, false)
+    expect(nao).toMatchObject({ usaValeTransporte: false, passesDia: undefined, valorPasse: undefined, docsNaoAplica: ['vale_transporte'] })
+    expect(situacaoPessoal(nao, [doc('vale_transporte')]).vale_transporte).toBe('nao_se_aplica')
+    const sim = comValeTransporte(nao, true)
+    expect(sim.docsNaoAplica).toEqual([])
+    expect(situacaoPessoal(sim, []).vale_transporte).toBe('pendente')
   })
 
   it('documentos de outra categoria não contam', () => {
