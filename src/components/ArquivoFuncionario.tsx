@@ -44,9 +44,20 @@ export function ArquivoFuncionario({ f }: { f: Funcionario }) {
     <Modulo
       titulo="Documentos assinados"
       className="lg:col-span-3"
-      resumo={<Selo cor="cinza">{meus.length === 0 ? 'Nenhum guardado' : `${meus.length} ${meus.length === 1 ? 'guardado' : 'guardados'}`}</Selo>}
+      resumo={
+        meus.length === 0 ? (
+          <Selo cor="amarelo">Enviar documentos</Selo>
+        ) : (
+          <Selo cor="cinza">{`${meus.length} ${meus.length === 1 ? 'guardado' : 'guardados'}`}</Selo>
+        )
+      }
     >
       <div className="p-4">
+      {f.tipo !== 'socio' && (
+        <p className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          <strong>Precisamos enviar os documentos:</strong> depois de assinado, envie aqui a foto ou o PDF de cada documento deste funcionário.
+        </p>
+      )}
       {/* envio */}
       <div className="mb-5 grid items-end gap-3 rounded-xl bg-gray-50 p-3 sm:grid-cols-[1fr_2fr_auto]">
         <Campo rotulo="Tipo">
