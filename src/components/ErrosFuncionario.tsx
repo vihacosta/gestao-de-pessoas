@@ -1,10 +1,15 @@
-import { AlertTriangle, Plus, Trash2, Undo2 } from 'lucide-react'
+import { AlertTriangle, FileDown, Plus, Trash2, Undo2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { brl, dataBR } from '../lib/clt'
-import { aviso, explicacao, grupoDoErro, gruposDeErros, LIMITE, type ErroFuncionario, type GrupoErros } from '../lib/descontoErros'
+import { salvarNoComputador } from '../lib/arquivos'
+import { aviso, explicacao, grupoDoErro, gruposDeErros, LIMITE, situacaoErro, type ErroFuncionario, type GrupoErros } from '../lib/descontoErros'
 import { hojeISO } from '../lib/hoje'
+import { camposDoModelo, modelosPadrao, montarDados, nomeArquivo, preencher } from '../lib/modelos'
 import { novoId, remover, salvar, salvarVarios, useTabela } from '../lib/store'
-import { Botao, Campo, Cartao, Entrada, Modal, Selo, Vazio, type CorSelo, Oculto } from './ui'
+import type { Funcionario } from '../lib/types'
+import { useConfig } from '../pages/Configuracoes'
+import { camposFaltando, carregarModelo } from '../pages/Documentos'
+import { Botao, Campo, Entrada, Modal, Modulo, Selo, Vazio, type CorSelo, Oculto } from './ui'
 
 /** "1.250,50", "150", "40.5" → número (ponto com 1 ou 2 casas no fim conta como centavos) */
 const numero = (s: string) => {
@@ -18,15 +23,34 @@ const corDoGrupo = (g: GrupoErros): CorSelo => (g.pago ? 'cinza' : g.desconto > 
  * Quebras e erros de uma pessoa, com a política de desconto por erros:
  * mostra quando desconta e quanto, e permite marcar o desconto como feito.
  */
-export function ErrosFuncionario({ funcionarioId }: { funcionarioId: string }) {
+export function ErrosFuncionario({ f }: { f: Funcionario }) {
+  const funcionarioId = f.id
+  const config = useConfig()
   const { rows } = useTabela<ErroFuncionario>('erros')
   const [lancando, setLancando] = useState(false)
   const [descontando, setDescontando] = useState<GrupoErros | null>(null)
   const hoje = hojeISO()
+  const [mesFolha, setMesFolha] = useState(hoje.slice(0, 7))
 
   const erros = useMemo(() => rows.filter((e) => e.funcionarioId === funcionarioId), [rows, funcionarioId])
   const grupos = useMemo(() => gruposDeErros(erros, hoje), [erros, hoje])
   const pendentes = grupos.filter((g) => !g.pago && g.desconto > 0)
+  const aDescontar = pendentes.reduce((s, g) => s + g.desconto, 0)
+
+  /** Baixa a autorização de desconto já preenchida com o valor e o mês da folha */
+  async function baixarAutorizacao(g: GrupoErros, mes: string) {
+    if (!g.pago && g.aConfirmar && !confirm(`A regra deste caso ainda está a confirmar com a empresa. ${explicacao(g)} Baixar o documento com ${brl(g.desconto)}?`)) return
+    const m = modelosPadrao.find((x) => x.id === 'autorizacao-de-desconto')!
+    try {
+      const buf = await carregarModelo(m)
+      const faltando = camposFaltando(camposDoModelo(buf), f, hoje).filter((c) => !/valor|m[eê]s/i.test(c))
+      const extras = { valor: g.desconto.toFixed(2).replace('.', ','), mes_referencia: mes }
+      salvarNoComputador(preencher(buf, montarDados(m, { funcionarios: [f], dataDoc: hoje, extras, config })), nomeArquivo(m, [f]))
+      if (faltando.length) alert(`Documento gerado, mas estes dados estão em branco no cadastro: ${faltando.join(', ')}.`)
+    } catch (e) {
+      alert('Não foi possível gerar o documento: ' + String((e as Error).message ?? e))
+    }
+  }
 
   async function excluir(e: ErroFuncionario) {
     if (!confirm(`Excluir o erro de ${dataBR(e.data)} (${e.descricao}, ${brl(e.valor)})?`)) return
@@ -41,11 +65,19 @@ export function ErrosFuncionario({ funcionarioId }: { funcionarioId: string }) {
     )
   }
 
+  const resumo =
+    pendentes.length > 0 ? (
+      <Selo cor="vermelho">Descontar <Oculto>{brl(aDescontar)}</Oculto></Selo>
+    ) : grupos.length > 0 ? (
+      <Selo cor="verde">Nada a descontar</Selo>
+    ) : (
+      <Selo cor="cinza">Nenhum erro</Selo>
+    )
+
   return (
-    <Cartao>
+    <Modulo titulo="Erros e quebras" resumo={resumo}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-3">
         <div>
-          <span className="font-semibold">Erros e quebras</span>
           <p className="text-xs text-gray-500">
             1 erro em 3 meses não desconta. Mais de um: desconta a soma dividida pela quantidade. Acima de <Oculto>{brl(LIMITE)}</Oculto>: desconta o que passar.
           </p>
@@ -60,6 +92,13 @@ export function ErrosFuncionario({ funcionarioId }: { funcionarioId: string }) {
           <span className="mr-auto">
             <strong>Descontar <Oculto>{brl(g.desconto)}</Oculto></strong> na folha ({g.erros.length} {g.erros.length === 1 ? 'erro' : 'erros'} desde {dataBR(g.inicio)})
           </span>
+          <label className="flex items-center gap-1 text-xs text-gray-600">
+            Folha de
+            <Entrada type="month" value={mesFolha} onChange={(e) => setMesFolha(e.target.value)} className="w-40 py-1.5" />
+          </label>
+          <Botao variante="secundario" disabled={!mesFolha} onClick={() => baixarAutorizacao(g, mesFolha)} title="Baixa a autorização de desconto preenchida, para a pessoa assinar">
+            <FileDown size={16} /> Baixar autorização
+          </Botao>
           <Botao onClick={() => setDescontando(g)}>Marcar como descontado</Botao>
         </div>
       ))}
@@ -80,23 +119,34 @@ export function ErrosFuncionario({ funcionarioId }: { funcionarioId: string }) {
                 </Selo>
               )}
               {g.pago && (
-                <Botao variante="fantasma" className="ml-auto px-2 py-1" onClick={() => desfazer(g)} title="Desfazer o desconto">
-                  <Undo2 size={14} /> Desfazer
-                </Botao>
+                <span className="ml-auto flex gap-1">
+                  <Botao variante="fantasma" className="px-2 py-1" onClick={() => baixarAutorizacao(g, (g.descontadoEm ?? hoje).slice(0, 7))} title="Baixar a autorização deste desconto">
+                    <FileDown size={14} /> Autorização
+                  </Botao>
+                  <Botao variante="fantasma" className="px-2 py-1" onClick={() => desfazer(g)} title="Desfazer o desconto">
+                    <Undo2 size={14} /> Desfazer
+                  </Botao>
+                </span>
               )}
             </div>
             <p className="mt-1 text-xs text-gray-500">{explicacao(g)}</p>
             <ul className="mt-2 space-y-1 text-sm">
-              {g.erros.map((e) => (
+              {g.erros.map((e) => {
+                const s = situacaoErro(g, e, erros)
+                return (
                 <li key={e.id} className="flex items-center gap-3">
                   <span className="w-20 shrink-0 text-gray-500">{dataBR(e.data)}</span>
-                  <span className="flex-1">{e.descricao || '—'}</span>
+                  <span className="min-w-0 flex-1">
+                    {e.descricao || '—'}
+                    <span className={s.desconta ? 'block text-xs font-medium text-red-700' : 'block text-xs text-gray-500'}>{s.texto}</span>
+                  </span>
                   <span className="font-medium"><Oculto>{brl(e.valor)}</Oculto></span>
                   <button onClick={() => excluir(e)} className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600" aria-label="Excluir erro">
                     <Trash2 size={14} />
                   </button>
                 </li>
-              ))}
+                )
+              })}
             </ul>
           </li>
         ))}
@@ -104,7 +154,7 @@ export function ErrosFuncionario({ funcionarioId }: { funcionarioId: string }) {
 
       <LancarErro aberto={lancando} onFechar={() => setLancando(false)} funcionarioId={funcionarioId} erros={erros} />
       <MarcarDescontado grupo={descontando} onFechar={() => setDescontando(null)} />
-    </Cartao>
+    </Modulo>
   )
 }
 
@@ -141,6 +191,7 @@ function LancarErro({ aberto, onFechar, funcionarioId, erros }: { aberto: boolea
         {previa && (
           <div className={previa.desconto > 0 ? 'rounded-lg bg-red-50 p-3 text-sm' : 'rounded-lg bg-green-50 p-3 text-sm'}>
             <div className="font-semibold">Com este erro: {aviso(previa)}</div>
+            <div className="mt-1 text-xs font-medium">{situacaoErro(previa, rascunho, [...erros, rascunho]).texto}</div>
             <div className="mt-1 text-xs text-gray-600">{explicacao(previa)}</div>
           </div>
         )}

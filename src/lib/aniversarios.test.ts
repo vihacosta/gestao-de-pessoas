@@ -90,10 +90,10 @@ describe('planilha RELAÇÃO DE FUNCIONÁRIOS ATIVOS', () => {
 
   it('lê nomes, situação, aniversário (dia/mês) e admissão', () => {
     expect(linhasDosAtivos(abas)).toEqual([
-      { linha: 4, nome: 'RAFAELA CRISTINA DA SILVA MOREIRA', situacao: 'ATIVO', aniversario: { dia: 9, mes: 10 }, admissao: '2017-09-21' },
-      { linha: 5, nome: 'NAYARA CRISTINA OLIVEIRA', situacao: 'DESLIGADO', aniversario: undefined, admissao: undefined },
-      { linha: 6, nome: 'LARISSA PATRICIA DE SOUZA', situacao: 'ATIVO', aniversario: { dia: 15, mes: 3 }, admissao: '2025-08-07' },
-      { linha: 7, nome: 'BRUNA REGINA BATISTA DOS REIS', situacao: 'ATIVO', aniversario: undefined, admissao: undefined },
+      { linha: 4, numero: '10', nome: 'RAFAELA CRISTINA DA SILVA MOREIRA', situacao: 'ATIVO', aniversario: { dia: 9, mes: 10 }, admissao: '2017-09-21' },
+      { linha: 5, numero: '30', nome: 'NAYARA CRISTINA OLIVEIRA', situacao: 'DESLIGADO', aniversario: undefined, admissao: undefined },
+      { linha: 6, numero: '58', nome: 'LARISSA PATRICIA DE SOUZA', situacao: 'ATIVO', aniversario: { dia: 15, mes: 3 }, admissao: '2025-08-07' },
+      { linha: 7, numero: undefined, nome: 'BRUNA REGINA BATISTA DOS REIS', situacao: 'ATIVO', aniversario: undefined, admissao: undefined },
     ])
   })
 
@@ -108,7 +108,7 @@ describe('planilha RELAÇÃO DE FUNCIONÁRIOS ATIVOS', () => {
   it('aponta quem está sem nascimento ou com admissão diferente', () => {
     const r = conferirAtivos(
       [
-        func({ nome: 'Rafaela Cristina da Silva Moreira', dataAdmissao: '2017-09-21', dataNascimento: '1990-10-09' }), // tudo certo
+        func({ nome: 'Rafaela Cristina da Silva Moreira', dataAdmissao: '2017-09-21', dataNascimento: '1990-10-09', numeroCadastro: '10' }), // tudo certo
         func({ nome: 'Larissa Patricia de Souza', dataAdmissao: '2025-08-04', dataNascimento: '1999-03-16' }), // admissão e dia diferentes
         func({ nome: 'Bruna Regina Batista dos Reis', dataAdmissao: '2026-01-05' }), // sem nascimento
         func({ nome: 'Pessoa Nova', dataAdmissao: '2026-10-01' }), // não está na planilha

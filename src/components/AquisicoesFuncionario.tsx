@@ -4,7 +4,7 @@ import { criarParcelas, pendenteAquisicao, quitada, totalAquisicao, type Aquisic
 import { brl, dataBR } from '../lib/clt'
 import { hojeISO } from '../lib/hoje'
 import { novoId, remover, salvar, useTabela } from '../lib/store'
-import { Botao, Campo, Cartao, Entrada, Modal, Selo, Vazio, Oculto } from './ui'
+import { Botao, Campo, Entrada, Modal, Modulo, Selo, Vazio, Oculto } from './ui'
 
 /** "1.250,50", "150", "40.5" → número */
 const numero = (s: string) => {
@@ -29,18 +29,17 @@ export function AquisicoesFuncionario({ funcionarioId }: { funcionarioId: string
   }
 
   return (
-    <Cartao>
+    <Modulo
+      titulo="Aquisição de mercadorias"
+      resumo={pendente > 0 ? <Selo cor="amarelo">a descontar: <Oculto>{brl(pendente)}</Oculto></Selo> : <Selo cor="cinza">{lista.length ? 'Nada a descontar' : 'Nenhuma aquisição'}</Selo>}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-3">
         <div>
-          <span className="font-semibold">Aquisição de mercadorias</span>
           <p className="text-xs text-gray-500">Compras descontadas em folha. Clique numa parcela para marcar como descontada.</p>
         </div>
-        <div className="flex items-center gap-2">
-          {pendente > 0 && <Selo cor="amarelo">a descontar: <Oculto>{brl(pendente)}</Oculto></Selo>}
-          <Botao variante="secundario" onClick={() => setLancando(true)}>
-            <Plus size={16} /> Lançar aquisição
-          </Botao>
-        </div>
+        <Botao variante="secundario" onClick={() => setLancando(true)}>
+          <Plus size={16} /> Lançar aquisição
+        </Botao>
       </div>
 
       {lista.length === 0 && <Vazio>Nenhuma aquisição lançada.</Vazio>}
@@ -79,7 +78,7 @@ export function AquisicoesFuncionario({ funcionarioId }: { funcionarioId: string
         ))}
       </ul>
       <LancarAquisicao aberto={lancando} onFechar={() => setLancando(false)} funcionarioId={funcionarioId} />
-    </Cartao>
+    </Modulo>
   )
 }
 

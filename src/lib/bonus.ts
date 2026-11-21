@@ -66,6 +66,7 @@ export function bonusDoMes(f: Funcionario, ausencias: Ausencia[], mes: string, c
   const ini = d(`${mes}-01`)
   const fim = endOfMonth(ini)
   const vazio = { valor: 0, motivos: [] as string[], avisos: [] as string[], usouCartao: !!cartao, horasNaoCompensadas: 0, ocorrencias: [] as Ausencia[] }
+  if (f.tipo === 'socio') return { ...vazio, status: 'fora' }
 
   if (isAfter(d(f.dataAdmissao), fim) || (f.dataDemissao && isBefore(d(f.dataDemissao), ini)))
     return { ...vazio, status: 'fora' }

@@ -46,7 +46,8 @@ export function situacaoPessoal(f: Pick<Funcionario, 'docsNaoAplica'>, docs: Doc
 }
 
 /** Nomes do que ainda falta entregar (CNH / RG / CPF contam como um item só) */
-export function pendenciasPessoais(f: Pick<Funcionario, 'docsNaoAplica'>, docs: DocumentoGuardado[]): string[] {
+export function pendenciasPessoais(f: Pick<Funcionario, 'docsNaoAplica'> & Partial<Pick<Funcionario, 'tipo'>>, docs: DocumentoGuardado[]): string[] {
+  if (f.tipo === 'socio') return []
   const s = situacaoPessoal(f, docs)
   const faltam: string[] = []
   for (const i of itensPessoais) {

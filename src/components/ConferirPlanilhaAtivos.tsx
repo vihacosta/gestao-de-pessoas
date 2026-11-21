@@ -45,6 +45,7 @@ export function ConferirPlanilhaAtivos() {
   const r = linhas ? conferirAtivos(funcionarios, linhas) : null
   const paraCadastrar = r?.foraDoSistema.filter((l) => l.admissao) ?? []
   const admissoesDiferentes = r?.itens.filter((c) => c.admissaoDiferente && c.planilha?.admissao) ?? []
+  const numerosDiferentes = r?.itens.filter((c) => c.numeroDiferente) ?? []
 
   async function cadastrar(lista: LinhaAtivos[]) {
     const novos = lista.map((l) => funcionarioDaPlanilha(l, salarios.get(semAcento(l.nome)))).filter((f): f is Funcionario => !!f)
@@ -72,6 +73,18 @@ export function ConferirPlanilhaAtivos() {
     setImportando(false)
   }
 
+  async function usarTodosNumeros() {
+    if (!confirm(`Gravar o número de controle da planilha em ${numerosDiferentes.length} ${numerosDiferentes.length === 1 ? 'pessoa' : 'pessoas'}?`)) return
+    setImportando(true)
+    try {
+      await salvarVarios<Funcionario>('funcionarios', numerosDiferentes.map((c) => ({ ...c.f, numeroCadastro: c.planilha!.numero })))
+      setAviso('Números de controle atualizados com os da planilha.')
+    } catch (e) {
+      alert('Não foi possível salvar: ' + String((e as Error).message ?? e))
+    }
+    setImportando(false)
+  }
+
   return (
     <>
       <Botao variante="secundario" onClick={() => setAberto(true)}>
@@ -82,8 +95,8 @@ export function ConferirPlanilhaAtivos() {
           {!r ? (
             <>
               <p className="text-gray-600">
-                Envie a planilha <b>RELAÇÃO DE FUNCIONÁRIOS ATIVOS.xlsx</b>. O sistema compara a aba FUNCIONARIOS ATIVOS (ANIVERSÁRIO e DATA ADMISSÃO) com o cadastro e mostra quem está
-                sem data de nascimento ou com admissão diferente. Nada muda no cadastro até você clicar em salvar.
+                Envie a planilha <b>RELAÇÃO DE FUNCIONÁRIOS ATIVOS.xlsx</b>. O sistema compara a aba FUNCIONARIOS ATIVOS (NUMERO CONTROLE, ANIVERSÁRIO e DATA ADMISSÃO) com o cadastro e mostra quem está
+                sem data de nascimento ou com número ou admissão diferente. Nada muda no cadastro até você clicar em salvar.
               </p>
               <input ref={ref} type="file" accept=".xlsx" className="hidden" onChange={(e) => ler(e.target.files?.[0])} />
               <Botao onClick={() => ref.current?.click()} disabled={lendo}>
@@ -94,15 +107,22 @@ export function ConferirPlanilhaAtivos() {
           ) : (
             <>
               {aviso && <p className="rounded-lg bg-green-50 px-3 py-2 text-green-800">{aviso}</p>}
-              {admissoesDiferentes.length > 1 && (
-                <div className="flex justify-end">
+              {(numerosDiferentes.length > 0 || admissoesDiferentes.length > 1) && (
+                <div className="flex flex-wrap justify-end gap-2">
+                  {numerosDiferentes.length > 0 && (
+                    <Botao onClick={usarTodosNumeros} disabled={importando}>
+                      Usar os números da planilha ({numerosDiferentes.length})
+                    </Botao>
+                  )}
+                  {admissoesDiferentes.length > 1 && (
                   <Botao variante="secundario" onClick={usarTodasAdmissoes} disabled={importando}>
                     Usar todas as admissões da planilha ({admissoesDiferentes.length})
                   </Botao>
+                  )}
                 </div>
               )}
               {r.itens.length === 0 ? (
-                <p className="rounded-lg bg-green-50 px-3 py-2 text-green-800">Tudo certo: todos os ativos têm data de nascimento e a admissão bate com a planilha.</p>
+                <p className="rounded-lg bg-green-50 px-3 py-2 text-green-800">Tudo certo: todos os ativos têm data de nascimento, e o número e a admissão batem com a planilha.</p>
               ) : (
                 <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
                   {r.itens.map((c) => (
@@ -208,6 +228,16 @@ function ItemConferencia({ c }: { c: Conferencia }) {
             </Botao>
             {!nascValido && nasc && <span className="text-xs text-gray-500">complete com o ano (dd/mm/aaaa)</span>}
           </div>
+        </div>
+      )}
+
+      {c.numeroDiferente && (
+        <div className="flex flex-wrap items-center gap-2 text-gray-600">
+          <Selo cor="amarelo">número diferente</Selo>
+          Sistema: {f.numeroCadastro ?? '—'} · Planilha: {planilha?.numero}
+          <Botao variante="secundario" onClick={() => gravar({ numeroCadastro: planilha?.numero })} disabled={gravando}>
+            Usar o da planilha
+          </Botao>
         </div>
       )}
 

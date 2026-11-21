@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Botao, Cabecalho, Cartao, Entrada, Selo, Vazio, Oculto } from '../components/ui'
 import { ConferirPlanilhaAtivos } from '../components/ConferirPlanilhaAtivos'
-import { brl, dataBR, salarioEm } from '../lib/clt'
+import { brl, dataBR, nomesTipoContrato, salarioEm } from '../lib/clt'
 import { hojeISO } from '../lib/hoje'
 import { useTabela } from '../lib/store'
 import { precisaConferir } from '../lib/conferenciaAnual'
@@ -105,7 +105,7 @@ export default function Funcionarios() {
                 <div className="hidden text-right text-sm sm:block">
                   <div><Oculto>{brl(salarioEm(f, hoje))}</Oculto></div>
                 </div>
-                {f.dataDemissao ? <Selo cor="vermelho">Desligado</Selo> : f.tipo === 'estagio' ? <Selo cor="roxo">Estágio</Selo> : <Selo cor="azul">CLT</Selo>}
+                {f.dataDemissao ? <Selo cor="vermelho">Desligado</Selo> : <Selo cor={f.tipo === 'estagio' ? 'roxo' : f.tipo === 'socio' ? 'cinza' : 'azul'}>{nomesTipoContrato[f.tipo]}</Selo>}
               </Link>
             </li>
           ))}

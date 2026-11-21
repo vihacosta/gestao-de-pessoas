@@ -17,7 +17,7 @@ import { salvar, useTabela } from '../lib/store'
 import type { Ausencia, CartaoPontoSalvo, Funcionario } from '../lib/types'
 import { useConfig } from '../pages/Configuracoes'
 import { ImportarHistorico } from './ImportarHistorico'
-import { Botao, Cartao, Selecao, Selo, Vazio, cx, type CorSelo } from './ui'
+import { Botao, Cartao, Modulo, Selecao, Selo, Vazio, cx, type CorSelo } from './ui'
 
 const opcoesTolerancia = [0, 10, 15, 20, 25, 30, 45, 60]
 
@@ -86,10 +86,11 @@ export function HistoricoOcorrencias({ funcionarioId }: { funcionarioId?: string
 
   const pessoasComOcorrencia = [...new Set(todas.map((o) => o.funcionarioId))].sort((a, b) => nome(a).localeCompare(nome(b)))
 
-  return (
-    <Cartao>
+  const titulo = 'Histórico de faltas e horas devidas'
+  const conteudo = (
+    <>
       <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3">
-        <span className="mr-auto font-semibold">Histórico de faltas e horas devidas</span>
+        <span className="mr-auto font-semibold">{!funcionarioId && titulo}</span>
         {!funcionarioId && <ImportarHistorico />}
         {!funcionarioId && (
           <div className="w-56"><Selecao value={pessoa} onChange={(e) => setPessoa(e.target.value)} className="py-1.5" aria-label="Pessoa">
@@ -189,6 +190,25 @@ export function HistoricoOcorrencias({ funcionarioId }: { funcionarioId?: string
           </div>
         )}
       </div>
-    </Cartao>
+    </>
+  )
+
+  if (!funcionarioId) return <Cartao>{conteudo}</Cartao>
+
+  // na ficha do funcionário abre fechado, só com os totais
+  const comOcorrencia = naTabela.filter((c) => totais[c] > 0)
+  return (
+    <Modulo
+      titulo={titulo}
+      resumo={
+        comOcorrencia.length ? (
+          comOcorrencia.map((c) => <Selo key={c} cor={corCategoria[c]}>{nomesCategoria[c]}: {totais[c]}</Selo>)
+        ) : (
+          <Selo cor="verde">Sem ocorrências</Selo>
+        )
+      }
+    >
+      {conteudo}
+    </Modulo>
   )
 }

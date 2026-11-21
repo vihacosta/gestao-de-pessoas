@@ -21,11 +21,11 @@ export const nomeMes = (m: string) => {
 /** Mês anterior ao atual: é o mês dos holerites e pontos que estão sendo assinados agora */
 export const mesAnterior = () => format(addMonths(d(hojeISO()), -1), 'yyyy-MM')
 
-/** Funcionários que trabalharam em algum dia do mês */
+/** Funcionários que trabalharam em algum dia do mês e têm holerite e ponto (sócios não têm) */
 export function ativosNoMes(funcionarios: Funcionario[], mes: string) {
   const ini = `${mes}-01`
   const fim = iso(endOfMonth(d(ini)))
-  return funcionarios.filter((f) => f.dataAdmissao <= fim && (!f.dataDemissao || f.dataDemissao >= ini))
+  return funcionarios.filter((f) => f.tipo !== 'socio' && f.dataAdmissao <= fim && (!f.dataDemissao || f.dataDemissao >= ini))
 }
 
 /** Quantos holerites/pontos assinados faltam no mês */

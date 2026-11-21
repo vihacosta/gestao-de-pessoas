@@ -38,7 +38,7 @@ export function linhasCartao(funcionarios: Funcionario[], ausencias: Ausencia[],
   const ini = `${mes}-01`
   const fim = iso(endOfMonth(d(ini)))
   return funcionarios
-    .filter((f) => !f.semCartaoBeneficio && f.dataAdmissao <= fim && (!f.dataDemissao || f.dataDemissao >= ini))
+    .filter((f) => f.tipo !== 'socio' && !f.semCartaoBeneficio && f.dataAdmissao <= fim && (!f.dataDemissao || f.dataDemissao >= ini))
     .map((f) => {
       const bonus = bonusDoMes(f, ausencias, mes, c, pontos.find((p) => p.funcionarioId === f.id && p.mes === mes), marcas)
       return {

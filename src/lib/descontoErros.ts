@@ -5,7 +5,7 @@
  * - Se a soma passar de R$ 200, desconta só o que passar de 200, mesmo com um único erro.
  * - Depois que a pessoa paga, a contagem de 3 meses recomeça no próximo erro.
  */
-import { addDays, addMonths } from 'date-fns'
+import { addDays, addMonths, differenceInCalendarDays } from 'date-fns'
 import { brl, d, dataBR, iso } from './clt'
 
 /** Quebra ou erro lançado para um funcionário (tabela "erros") */
@@ -129,6 +129,29 @@ export function gruposDeErros(erros: ErroFuncionario[], hoje: string, regra: Reg
 
 /** Grupo em que um erro caiu */
 export const grupoDoErro = (grupos: GrupoErros[], erroId: string) => grupos.find((g) => g.erros.some((e) => e.id === erroId))
+
+export interface SituacaoErro {
+  /** Dias desde o erro anterior da pessoa (vazio no primeiro erro) */
+  dias?: number
+  /** Este erro entra num desconto ainda não feito */
+  desconta: boolean
+  texto: string
+}
+
+/** Diz, para um erro, a distância do erro anterior e se ele gera desconto. Ex.: "35 dias depois do erro anterior: desconta" */
+export function situacaoErro(g: GrupoErros, e: ErroFuncionario, todos: ErroFuncionario[]): SituacaoErro {
+  const anterior = todos
+    .filter((x) => x.id !== e.id && (x.data < e.data || (x.data === e.data && x.id < e.id)))
+    .sort((a, b) => a.data.localeCompare(b.data) || a.id.localeCompare(b.id))
+    .pop()
+  const dias = anterior ? differenceInCalendarDays(d(e.data), d(anterior.data)) : undefined
+  const quando = dias === undefined ? '1º erro' : dias === 0 ? 'Mesmo dia do erro anterior' : `${dias} ${dias === 1 ? 'dia' : 'dias'} depois do erro anterior`
+  if (g.pago) return { dias, desconta: false, texto: `${quando}: já descontado` }
+  if (g.erros[0]?.id !== e.id) return { dias, desconta: true, texto: `${quando}: desconta` }
+  if (g.erros.length > 1) return { dias, desconta: true, texto: `${quando}: entra no desconto junto com o seguinte` }
+  if (g.total > LIMITE) return { dias, desconta: true, texto: `${quando}: desconta o que passa de ${brl(LIMITE)}` }
+  return { dias, desconta: false, texto: anterior ? `${quando}: não desconta (nova contagem de 3 meses)` : '1º erro: não desconta' }
+}
 
 /** Aviso curto: "não desconta (1º erro em 3 meses)", "desconta R$ 75,00", "descontado R$ 75,00 em 10/03/2026" */
 export function aviso(g: GrupoErros): string {

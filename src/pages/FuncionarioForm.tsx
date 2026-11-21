@@ -57,6 +57,15 @@ export default function FuncionarioForm() {
   }, [id, rows, carregando])
 
   const set = <K extends keyof Funcionario>(k: K, v: Funcionario[K]) => setF((x) => ({ ...x, [k]: v }))
+  const socio = f.tipo === 'socio'
+
+  /** Sócio fica fora de férias e cartão benefício; ao deixar de ser sócio, volta para os dois */
+  const mudarTipo = (tipo: Funcionario['tipo']) =>
+    setF((x) => {
+      if (tipo === 'socio') return { ...x, tipo, semFerias: true, semCartaoBeneficio: true }
+      if (x.tipo === 'socio') return { ...x, tipo, semFerias: undefined, semCartaoBeneficio: undefined }
+      return { ...x, tipo }
+    })
 
   /** Campo de texto simples ligado a uma propriedade do funcionário */
   const texto = (k: CampoTexto, rotulo: string, extra: { className?: string; required?: boolean; type?: string; placeholder?: string } = {}) => (
@@ -77,7 +86,7 @@ export default function FuncionarioForm() {
     setErro(null)
     try {
       const reg: Funcionario = { ...f }
-      if (!editando) reg.salarios = editaValores ? [{ data: f.dataAdmissao, valor: lerValor(salarioInicial), motivo: 'Admissão' }] : []
+      if (!editando) reg.salarios = editaValores && (!socio || salarioInicial.trim()) ? [{ data: f.dataAdmissao, valor: lerValor(salarioInicial), motivo: socio ? 'Pró-labore' : 'Admissão' }] : []
       await salvar('funcionarios', reg)
       navegar(`/funcionarios/${reg.id}`)
     } catch (err) {
@@ -146,16 +155,17 @@ export default function FuncionarioForm() {
 
           <Secao titulo="Contrato">
             <Campo
-              rotulo="Nº de cadastro (ponto)"
-              dica={numeroRepetido ? `Atenção: este número já é de ${numeroRepetido.nome}.` : 'O número usado para cadastrar a pessoa no ponto.'}
+              rotulo="Número de controle"
+              dica={numeroRepetido ? `Atenção: este número já é de ${numeroRepetido.nome}.` : 'O NUMERO CONTROLE da planilha de funcionários ativos.'}
             >
               <Entrada value={f.numeroCadastro ?? ''} onChange={(e) => set('numeroCadastro', e.target.value.trim() || undefined)} className={numeroRepetido ? 'border-amber-500' : undefined} />
             </Campo>
             {texto('cargo', 'Cargo *', { required: true })}
             <Campo rotulo="Tipo de contratação *">
-              <Selecao value={f.tipo} onChange={(e) => set('tipo', e.target.value as Funcionario['tipo'])}>
+              <Selecao value={f.tipo} onChange={(e) => mudarTipo(e.target.value as Funcionario['tipo'])}>
                 <option value="clt">CLT</option>
                 <option value="estagio">Estágio</option>
+                <option value="socio">Sócio</option>
               </Selecao>
             </Campo>
             <Campo rotulo="Data de admissão *">
@@ -167,14 +177,17 @@ export default function FuncionarioForm() {
                 <Entrada type="date" value={f.dataDemissao ?? ''} onChange={(e) => set('dataDemissao', e.target.value || undefined)} />
               </Campo>
             ) : editaValores ? (
-              <Campo rotulo={f.tipo === 'estagio' ? 'Bolsa-auxílio (R$) *' : 'Salário (R$) *'} dica="Reajustes são registrados depois, na ficha.">
-                <Entrada required inputMode="decimal" value={salarioInicial} onChange={(e) => setSalarioInicial(e.target.value)} placeholder="2.500,00" />
+              <Campo rotulo={socio ? 'Pró-labore (R$)' : f.tipo === 'estagio' ? 'Bolsa-auxílio (R$) *' : 'Salário (R$) *'} dica="Reajustes são registrados depois, na ficha.">
+                <Entrada required={!socio} inputMode="decimal" value={salarioInicial} onChange={(e) => setSalarioInicial(e.target.value)} placeholder="2.500,00" />
               </Campo>
             ) : (
               <p className="self-end pb-2 text-xs text-gray-500">O salário será preenchido por quem tem acesso a valores.</p>
             )}
           </Secao>
 
+          {socio ? (
+            <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">Sócios ficam fora de folha ponto, holerite, assinaturas, férias, bônus e cartão benefício.</p>
+          ) : (
           <Secao titulo="Cartão benefício">
             {editaValores && (
               <Campo rotulo="Cultura (R$ por mês)" dica="Valor fixo de Cultura no cartão benefício. Vazio = não recebe.">
@@ -189,13 +202,14 @@ export default function FuncionarioForm() {
             )}
             <label className="flex items-center gap-2 self-end pb-2 text-sm sm:col-span-2">
               <input type="checkbox" checked={!!f.semCartaoBeneficio} onChange={(e) => set('semCartaoBeneficio', e.target.checked || undefined)} />
-              Não entra na planilha do cartão benefício (ex.: sócias)
+              Não entra na planilha do cartão benefício
             </label>
             <label className="flex items-center gap-2 self-end pb-2 text-sm sm:col-span-2">
               <input type="checkbox" checked={!!f.semFerias} onChange={(e) => set('semFerias', e.target.checked || undefined)} />
-              Não entra no controle de férias (ex.: sócios)
+              Não entra no controle de férias
             </label>
           </Secao>
+          )}
 
           <Secao titulo="Família, contatos e banco">
             <Campo rotulo="Dependentes (nome e parentesco)" className="sm:col-span-2 lg:col-span-3">

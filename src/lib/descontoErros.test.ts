@@ -1,9 +1,39 @@
 import { describe, expect, it } from 'vitest'
-import { aviso, calcularDesconto, explicacao, fimDoPeriodo, gruposDeErros, type ErroFuncionario } from './descontoErros'
+import { aviso, calcularDesconto, explicacao, fimDoPeriodo, grupoDoErro, gruposDeErros, situacaoErro, type ErroFuncionario } from './descontoErros'
 
 let n = 0
 const erro = (data: string, valor: number, extra: Partial<ErroFuncionario> = {}): ErroFuncionario => ({
   id: `e${++n}`, funcionarioId: 'maria', data, descricao: 'Quebra', valor, ...extra,
+})
+
+describe('aviso de cada erro', () => {
+  const erro = (id: string, data: string, valor = 50, extra: Partial<ErroFuncionario> = {}): ErroFuncionario => ({ id, funcionarioId: 'f', data, descricao: '', valor, ...extra })
+  const sit = (lista: ErroFuncionario[], id: string) => {
+    const e = lista.find((x) => x.id === id)!
+    return situacaoErro(grupoDoErro(gruposDeErros(lista, '2026-11-21'), id)!, e, lista)
+  }
+
+  it('primeiro erro não desconta', () => {
+    expect(sit([erro('a', '2026-01-10')], 'a')).toEqual({ dias: undefined, desconta: false, texto: '1º erro: não desconta' })
+  })
+  it('35 dias depois do anterior desconta', () => {
+    const l = [erro('a', '2026-01-10'), erro('b', '2026-02-14')]
+    expect(sit(l, 'b')).toEqual({ dias: 35, desconta: true, texto: '35 dias depois do erro anterior: desconta' })
+    expect(sit(l, 'a').desconta).toBe(true)
+  })
+  it('depois de 3 meses abre nova contagem e não desconta', () => {
+    const r = sit([erro('a', '2026-01-10'), erro('b', '2026-05-10')], 'b')
+    expect(r.desconta).toBe(false)
+    expect(r.texto).toBe('120 dias depois do erro anterior: não desconta (nova contagem de 3 meses)')
+  })
+  it('erro único acima do limite desconta', () => {
+    expect(sit([erro('a', '2026-01-10', 300)], 'a').desconta).toBe(true)
+  })
+  it('erro já pago não aparece como desconto a fazer', () => {
+    const pago = { descontadoEm: '2026-03-05', valorDescontado: 50, pagamentoId: 'p' }
+    const l = [erro('a', '2026-01-10', 50, pago), erro('b', '2026-02-14', 50, pago)]
+    expect(sit(l, 'b')).toMatchObject({ dias: 35, desconta: false })
+  })
 })
 
 describe('política de desconto por erros', () => {

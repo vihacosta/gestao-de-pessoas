@@ -5,7 +5,7 @@ import { salvar, useTabela } from '../lib/store'
 import type { DocumentoGuardado, Funcionario, TipoDocPessoal } from '../lib/types'
 import { EnviarArquivos } from './EnviarArquivos'
 import { BotaoFoto } from './FotoFuncionario'
-import { Botao, Cartao, Selo, cx } from './ui'
+import { Botao, Modulo, Selo, cx } from './ui'
 
 /** Checklist dos documentos pessoais pedidos na admissão, com envio de foto/PDF de cada um */
 export function DocumentosPessoais({ f }: { f: Funcionario }) {
@@ -13,6 +13,7 @@ export function DocumentosPessoais({ f }: { f: Funcionario }) {
   const meus = documentos.filter((d) => d.funcionarioId === f.id && d.categoria === 'pessoal')
   const situacao = situacaoPessoal(f, meus)
   const faltam = pendenciasPessoais(f, meus)
+  const socio = f.tipo === 'socio'
 
   async function enviar(item: ItemPessoal, arquivos: File[]) {
     const atual = meus.find((d) => d.tipoPessoal === item.tipo)
@@ -38,11 +39,15 @@ export function DocumentosPessoais({ f }: { f: Funcionario }) {
     await salvar('funcionarios', { ...f, docsNaoAplica: [...lista] })
   }
 
+  // sócio não tem checklist de admissão; só mostra se já houver algo guardado
+  if (socio && meus.length === 0) return null
+
   return (
-    <Cartao className="p-5 lg:col-span-3">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-semibold">Documentos pessoais</h2>
-        {faltam.length === 0 ? (
+    <Modulo
+      titulo="Documentos pessoais"
+      className="lg:col-span-3"
+      resumo={
+        socio ? undefined : faltam.length === 0 ? (
           <Selo cor="verde">
             <CheckCircle2 size={13} /> Todos entregues
           </Selo>
@@ -50,9 +55,10 @@ export function DocumentosPessoais({ f }: { f: Funcionario }) {
           <Selo cor="amarelo">
             {faltam.length} pendente{faltam.length > 1 ? 's' : ''}
           </Selo>
-        )}
-      </div>
-
+        )
+      }
+    >
+      <div className="p-4">
       <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
         {itensPessoais.map((item) => {
           const s = situacao[item.tipo]
@@ -111,6 +117,7 @@ export function DocumentosPessoais({ f }: { f: Funcionario }) {
         })}
       </ul>
       <p className="mt-2 text-xs text-gray-500">Pode enviar foto (frente e verso juntas) ou PDF. Várias fotos de uma vez viram um PDF só.</p>
-    </Cartao>
+      </div>
+    </Modulo>
   )
 }

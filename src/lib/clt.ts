@@ -51,6 +51,9 @@ export function avos(inicio: string, fim: string): number {
   return Math.min(meses, 12)
 }
 
+/** Nome do tipo de contratação, para telas e documentos */
+export const nomesTipoContrato: Record<TipoContrato, string> = { clt: 'CLT', estagio: 'Estágio', socio: 'Sócio' }
+
 // ---------------------------------------------------------------- férias
 
 /** Tabela do art. 130 da CLT */
@@ -278,7 +281,7 @@ export function valoresFerias(salario: number, dias: number, abono: number, tipo
 // ---------------------------------------------------------------- 13º
 
 export function decimoTerceiro(f: Funcionario, ano: number, hoje: string) {
-  if (f.tipo === 'estagio') return { avos: 0, valor: 0 }
+  if (f.tipo !== 'clt') return { avos: 0, valor: 0 }
   const iniAno = d(`${ano}-01-01`)
   const fimAno = d(`${ano}-12-31`)
   const ini = maxDate([iniAno, d(f.dataAdmissao)])

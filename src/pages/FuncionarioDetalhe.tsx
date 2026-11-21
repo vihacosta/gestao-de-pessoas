@@ -11,6 +11,7 @@ import {
   decimoTerceiro,
   fgtsAcumuladoEstimado,
   fgtsMensal,
+  nomesTipoContrato,
   periodosAquisitivos,
   salarioEm,
   statusFerias,
@@ -67,6 +68,8 @@ export default function FuncionarioDetalhe() {
   const aniv = aniversarioEmpresa(f.dataAdmissao, hoje)
   const nasc = f.dataNascimento ? aniversarioNascimento(f.dataNascimento, hoje) : null
   const estagio = f.tipo === 'estagio'
+  const socio = f.tipo === 'socio'
+  const semEncargos = f.tipo !== 'clt'
 
   async function kitAdmissao() {
     if (!f) return
@@ -115,18 +118,22 @@ export default function FuncionarioDetalhe() {
       </Link>
       <Cabecalho
         titulo={f.nome}
-        subtitulo={`${f.cargo} · ${estagio ? 'Estágio' : 'CLT'}${f.dataDemissao ? ` · desligado em ${dataBR(f.dataDemissao)}` : ''}`}
+        subtitulo={`${f.cargo} · ${nomesTipoContrato[f.tipo]}${f.dataDemissao ? ` · desligado em ${dataBR(f.dataDemissao)}` : ''}`}
         acoes={
           <>
-            <Botao onClick={kitAdmissao} disabled={gerandoKit} title="Baixa todos os documentos de admissão preenchidos, com a data de admissão">
-              <FileDown size={16} /> Kit de admissão
-            </Botao>
-            <Botao variante="secundario" onClick={fichaCadastral} title="Baixa a ficha cadastral em Word com os dados atuais do cadastro">
+            {!socio && (
+              <Botao onClick={kitAdmissao} disabled={gerandoKit} title="Baixa todos os documentos de admissão preenchidos, com a data de admissão">
+                <FileDown size={16} /> Kit de admissão
+              </Botao>
+            )}
+            <Botao variante="secundario" onClick={fichaCadastral} title="Baixa a ficha cadastral em Word para enviar à contabilidade">
               <FileDown size={16} /> Ficha cadastral
             </Botao>
-            <Botao variante="secundario" onClick={() => setDesligamentoAberto(true)} title="Gera aviso prévio, pedido de demissão e os outros documentos do desligamento">
-              <UserMinus size={16} /> Desligamento
-            </Botao>
+            {!socio && (
+              <Botao variante="secundario" onClick={() => setDesligamentoAberto(true)} title="Gera aviso prévio, pedido de demissão e os outros documentos do desligamento">
+                <UserMinus size={16} /> Desligamento
+              </Botao>
+            )}
             <Link to={`/documentos?funcionario=${f.id}`}>
               <Botao variante="secundario">
                 <FileText size={16} /> Outro documento
@@ -159,7 +166,7 @@ export default function FuncionarioDetalhe() {
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <FotoFuncionario f={f} />
           <div className="grid flex-1 grid-cols-2 gap-4 sm:grid-cols-3">
-            <Info rotulo="Nº de cadastro (ponto)" valor={f.numeroCadastro} />
+            <Info rotulo="Número de controle" valor={f.numeroCadastro} />
             <Info rotulo="CPF" valor={f.cpf} />
             <Info rotulo="RG" valor={f.rg} />
             <Info rotulo="PIS" valor={f.pis} />
@@ -199,18 +206,18 @@ export default function FuncionarioDetalhe() {
           <h2 className="mb-4 font-semibold">Resumo</h2>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500">{estagio ? 'Bolsa atual' : 'Salário atual'}</dt>
+              <dt className="text-gray-500">{socio ? 'Pró-labore' : estagio ? 'Bolsa atual' : 'Salário atual'}</dt>
               <dd className="font-semibold"><Oculto>{brl(salarioEm(f, hoje))}</Oculto></dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-gray-500">13º de {ano}</dt>
-              <dd>{estagio ? 'Não se aplica' : <><Oculto>{brl(decimo.valor)}</Oculto> ({decimo.avos}/12)</>}</dd>
+              <dd>{semEncargos ? 'Não se aplica' : <><Oculto>{brl(decimo.valor)}</Oculto> ({decimo.avos}/12)</>}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-gray-500">FGTS mensal (8%)</dt>
-              <dd>{estagio ? 'Não se aplica' : <Oculto>{brl(fgtsMensal(f, hoje))}</Oculto>}</dd>
+              <dd>{semEncargos ? 'Não se aplica' : <Oculto>{brl(fgtsMensal(f, hoje))}</Oculto>}</dd>
             </div>
-            {!estagio && (
+            {!semEncargos && (
               <div className="flex justify-between">
                 <dt className="text-gray-500" title="Soma dos depósitos mensais de 8% sobre o salário de cada mês, sem 13º e férias">
                   FGTS depositado (estimativa)
@@ -255,7 +262,7 @@ export default function FuncionarioDetalhe() {
         </Cartao>
 
         {/* Férias */}
-        {f.semFerias ? (
+        {socio ? null : f.semFerias ? (
           <Cartao className="p-5 text-sm text-gray-500 lg:col-span-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -360,15 +367,19 @@ export default function FuncionarioDetalhe() {
 
         <ArquivoFuncionario f={f} />
 
-        <div className="lg:col-span-3">
-          <HistoricoOcorrencias funcionarioId={f.id} />
-        </div>
+        {!socio && (
+          <div className="lg:col-span-3">
+            <HistoricoOcorrencias funcionarioId={f.id} />
+          </div>
+        )}
 
         {pode('valores') && (
           <>
-            <div className="lg:col-span-3">
-              <ErrosFuncionario funcionarioId={f.id} />
-            </div>
+            {!socio && (
+              <div className="lg:col-span-3">
+                <ErrosFuncionario f={f} />
+              </div>
+            )}
 
             <div className="lg:col-span-3">
               <AquisicoesFuncionario funcionarioId={f.id} />

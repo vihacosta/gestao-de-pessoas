@@ -1,4 +1,4 @@
-export type TipoContrato = 'clt' | 'estagio'
+export type TipoContrato = 'clt' | 'estagio' | 'socio'
 
 export interface Salario {
   /** Data a partir da qual o valor vale (yyyy-mm-dd) */
@@ -11,7 +11,7 @@ export interface Funcionario {
   id: string
   nome: string
   cpf: string
-  /** Número com que a pessoa é cadastrada no relógio de ponto */
+  /** Número de controle da pessoa (coluna NUMERO CONTROLE da planilha de funcionários ativos) */
   numeroCadastro?: string
   rg?: string
   dataNascimento?: string

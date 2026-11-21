@@ -99,6 +99,19 @@ describe('modelos padrão', () => {
     expect(t).toContain('CPF: 111.222.333-44')
   })
 
+  it('acordo de desconto segue a política da planilha', async () => {
+    const m = modelosPadrao.find((x) => x.id === 'admissao-3-acordo-desconto')!
+    const blob = preencher(ler(m.id), montarDados(m, { funcionarios: [completa], dataDoc: '2026-11-19', extras: {} }))
+    const t = texto(await blob.arrayBuffer())
+    expect(t).toContain('dividindo o total pelo número de ocorrências')
+    expect(t).toContain('desconto de R$ 75,00')
+    expect(t).toContain('o desconto será de R$ 150,00')
+    expect(t).toContain('o período de 3 (três) meses é reiniciado')
+    expect(t).not.toContain('primeira quebra será desconsiderada')
+    expect(t).not.toContain('10% de desconto')
+    expect(t).not.toMatch(/\{\{/)
+  })
+
   it('ficha cadastral sai com os dados do cadastro', async () => {
     const m = modelosPadrao.find((x) => x.id === 'admissao-1-ficha-cadastral')!
     const blob = preencher(ler(m.id), montarDados(m, { funcionarios: [completa], dataDoc: '2026-11-19', extras: {} }))
@@ -110,6 +123,10 @@ describe('modelos padrão', () => {
     expect(t).toContain('CLT')
     expect(t).toContain('R$ 2.500,00')
     expect(t).not.toMatch(/\{\{/)
+    // vai só para a contabilidade: sem declaração, data ou assinatura
+    expect(t).not.toContain('Declaro')
+    expect(t).not.toContain('Maringá, 19 de novembro')
+    expect(t).not.toContain('____')
   })
 
   it('ficha cadastral com campos vazios não quebra', async () => {

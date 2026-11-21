@@ -1,4 +1,4 @@
-import { Eye, EyeOff, X } from 'lucide-react'
+import { ChevronDown, Eye, EyeOff, X } from 'lucide-react'
 import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
 import { useAuth } from '../auth'
 
@@ -47,6 +47,26 @@ export function Selecao(p: SelectHTMLAttributes<HTMLSelectElement>) {
 
 export function Cartao({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cx('rounded-xl border border-gray-200 bg-white', className)}>{children}</div>
+}
+
+/** Cartão que abre fechado: mostra só o título, um resumo curto e o botão para abrir */
+export function Modulo({ titulo, resumo, children, className }: { titulo: string; resumo?: ReactNode; children: ReactNode; className?: string }) {
+  const [aberto, setAberto] = useState(false)
+  return (
+    <Cartao className={className}>
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+        <button type="button" onClick={() => setAberto(!aberto)} className="mr-auto text-left font-semibold">
+          {titulo}
+        </button>
+        {resumo}
+        <Botao variante="secundario" className="px-3 py-1.5" onClick={() => setAberto(!aberto)} aria-expanded={aberto}>
+          {aberto ? 'Fechar' : 'Abrir'}
+          <ChevronDown size={15} className={cx('transition', aberto && 'rotate-180')} />
+        </Botao>
+      </div>
+      {aberto && <div className="border-t border-gray-100">{children}</div>}
+    </Cartao>
+  )
 }
 
 export function Cabecalho({ titulo, subtitulo, acoes }: { titulo: string; subtitulo?: string; acoes?: ReactNode }) {

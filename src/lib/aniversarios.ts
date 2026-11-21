@@ -52,6 +52,8 @@ export function proximosAniversariantes(funcionarios: Funcionario[], hoje: strin
 
 export interface LinhaAtivos {
   linha: number
+  /** Coluna NUMERO CONTROLE */
+  numero?: string
   nome: string
   situacao: string
   /** Só dia e mês: a planilha guarda o aniversário sem o ano de nascimento */
@@ -69,7 +71,7 @@ export function linhasDosAtivos(abas: { aba: string; linhas: (string | number)[]
   if (iCab < 0) return []
   const cab = aba.linhas[iCab].map((c) => semAcento(String(c ?? '')))
   const col = (nome: string) => cab.indexOf(nome)
-  const [cNome, cSit, cAniv, cAdm] = [col('FUNCIONARIO'), col('SITUACAO'), col('ANIVERSARIO'), col('DATA ADMISSAO')]
+  const [cNome, cSit, cAniv, cAdm, cNum] = [col('FUNCIONARIO'), col('SITUACAO'), col('ANIVERSARIO'), col('DATA ADMISSAO'), col('NUMERO CONTROLE')]
   const out: LinhaAtivos[] = []
   for (let i = iCab + 1; i < aba.linhas.length; i++) {
     const l = aba.linhas[i]
@@ -78,6 +80,7 @@ export function linhasDosAtivos(abas: { aba: string; linhas: (string | number)[]
     const aniv = cAniv >= 0 ? dataDaCelula(l[cAniv]) : undefined
     out.push({
       linha: i + 1,
+      numero: cNum >= 0 ? String(l[cNum] ?? '').trim().replace(/\.0+$/, '') || undefined : undefined,
       nome,
       situacao: semAcento(String(l[cSit] ?? '')),
       aniversario: aniv ? { dia: Number(aniv.slice(8, 10)), mes: Number(aniv.slice(5, 7)) } : undefined,
@@ -112,6 +115,8 @@ export interface Conferencia {
   /** Dia/mês do sistema diferente do aniversário da planilha */
   nascimentoDiferente: boolean
   admissaoDiferente: boolean
+  /** A planilha tem número de controle e ele é diferente do cadastro */
+  numeroDiferente: boolean
 }
 
 /**
@@ -134,8 +139,9 @@ export function conferirAtivos(funcionarios: Funcionario[], linhas: LinhaAtivos[
       nascimentoDiferente:
         !!nasc && !!planilha?.aniversario && (Number(nasc.slice(8, 10)) !== planilha.aniversario.dia || Number(nasc.slice(5, 7)) !== planilha.aniversario.mes),
       admissaoDiferente: !!planilha?.admissao && planilha.admissao !== f.dataAdmissao,
+      numeroDiferente: !!planilha?.numero && planilha.numero !== f.numeroCadastro,
     }
-    if (c.semNascimento || c.nascimentoDiferente || c.admissaoDiferente) itens.push(c)
+    if (c.semNascimento || c.nascimentoDiferente || c.admissaoDiferente || c.numeroDiferente) itens.push(c)
   }
   return { itens, foraDoSistema: ativosPlanilha.filter((l) => !achados.has(l)) }
 }
@@ -180,6 +186,7 @@ export function funcionarioDaPlanilha(l: LinhaAtivos, salario?: { valor: number 
   return {
     id: crypto.randomUUID(),
     nome: nomeProprio(l.nome),
+    numeroCadastro: l.numero,
     cpf: '',
     cargo: '',
     tipo: 'clt',

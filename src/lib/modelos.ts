@@ -4,7 +4,7 @@
  */
 import Docxtemplater from 'docxtemplater'
 import PizZip from 'pizzip'
-import { brl, dataBR, salarioEm } from './clt'
+import { brl, dataBR, nomesTipoContrato, salarioEm } from './clt'
 import { dataComDiaSemana, dataExtenso, lerValor, mesAno, reaisExtenso } from './extenso'
 import type { ConfigEmpresa, Funcionario, GrupoModelo } from './types'
 
@@ -127,7 +127,7 @@ export const camposFuncionario: [string, string][] = [
   ['data_nascimento', 'Data de nascimento'],
   ['endereco', 'Endereço completo'],
   ['horario_jornada', 'Horário da jornada'],
-  ['tipo_contrato', 'Tipo de contratação (CLT / Estágio)'],
+  ['tipo_contrato', 'Tipo de contratação (CLT / Estágio / Sócio)'],
   ['sexo', 'Sexo'],
   ['estado_civil', 'Estado civil'],
   ['grau_instrucao', 'Grau de instrução'],
@@ -177,7 +177,7 @@ export function dadosFuncionario(f: Funcionario, dataDoc: string): Record<string
     data_nascimento: f.dataNascimento ? dataBR(f.dataNascimento) : '',
     endereco: enderecoTexto(f),
     horario_jornada: f.horarioJornada ?? '',
-    tipo_contrato: f.tipo === 'estagio' ? 'Estágio' : 'CLT',
+    tipo_contrato: nomesTipoContrato[f.tipo],
     sexo: f.sexo ?? '',
     estado_civil: f.estadoCivil ?? '',
     grau_instrucao: f.grauInstrucao ?? '',
