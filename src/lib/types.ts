@@ -11,6 +11,8 @@ export interface Funcionario {
   id: string
   nome: string
   cpf: string
+  /** Número com que a pessoa é cadastrada no relógio de ponto */
+  numeroCadastro?: string
   rg?: string
   dataNascimento?: string
   email?: string

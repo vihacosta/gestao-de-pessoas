@@ -14,7 +14,7 @@ export interface ItemPessoal {
 }
 
 export const itensPessoais: ItemPessoal[] = [
-  { tipo: 'foto', nome: 'Foto 3x4' },
+  { tipo: 'foto', nome: 'Foto do funcionário', dica: 'Tirada aqui pela câmera; aparece na ficha' },
   { tipo: 'ctps', nome: 'Carteira de Trabalho (CTPS)' },
   { tipo: 'cnh', nome: 'CNH – Carteira de Motorista', dica: 'Se tiver, não precisa de RG e CPF' },
   { tipo: 'rg', nome: 'RG – Carteira de Identidade', dica: 'Só se não tiver CNH' },

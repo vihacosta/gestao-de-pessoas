@@ -36,7 +36,7 @@ export default function Funcionarios() {
     return rows
       .filter((f) => mostrarDesligados || !f.dataDemissao)
       .filter((f) => !soPendentes || faltam.has(f.id))
-      .filter((f) => !b || f.nome.toLowerCase().includes(b) || (somenteDigitos(b) && somenteDigitos(f.cpf).includes(somenteDigitos(b))))
+      .filter((f) => !b || f.nome.toLowerCase().includes(b) || f.numeroCadastro?.toLowerCase() === b || (somenteDigitos(b) && somenteDigitos(f.cpf).includes(somenteDigitos(b))))
       .sort((a, b) => a.nome.localeCompare(b.nome))
   }, [rows, busca, mostrarDesligados, soPendentes, faltam])
 
@@ -59,7 +59,7 @@ export default function Funcionarios() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative max-w-sm flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <Entrada placeholder="Buscar por nome ou CPF" value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9" />
+          <Entrada placeholder="Buscar por nome, CPF ou nº de cadastro" value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9" />
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-600">
           <input type="checkbox" checked={mostrarDesligados} onChange={(e) => setMostrarDesligados(e.target.checked)} />
@@ -86,6 +86,7 @@ export default function Funcionarios() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{f.nome}</div>
                   <div className="truncate text-sm text-gray-500">
+                    {f.numeroCadastro && `Nº ${f.numeroCadastro} · `}
                     {f.cargo} · admissão {dataBR(f.dataAdmissao)}
                   </div>
                   {precisaConferir(f, hoje) && (

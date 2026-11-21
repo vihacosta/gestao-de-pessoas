@@ -46,6 +46,7 @@ export default function FuncionarioForm() {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const editando = !!id
+  const numeroRepetido = f.numeroCadastro ? rows.find((r) => r.id !== f.id && r.numeroCadastro === f.numeroCadastro) : undefined
 
   useEffect(() => {
     if (!id || carregando) return
@@ -142,6 +143,12 @@ export default function FuncionarioForm() {
           </Secao>
 
           <Secao titulo="Contrato">
+            <Campo
+              rotulo="Nº de cadastro (ponto)"
+              dica={numeroRepetido ? `Atenção: este número já é de ${numeroRepetido.nome}.` : 'O número usado para cadastrar a pessoa no ponto.'}
+            >
+              <Entrada value={f.numeroCadastro ?? ''} onChange={(e) => set('numeroCadastro', e.target.value.trim() || undefined)} className={numeroRepetido ? 'border-amber-500' : undefined} />
+            </Campo>
             {texto('cargo', 'Cargo *', { required: true })}
             <Campo rotulo="Tipo de contratação *">
               <Selecao value={f.tipo} onChange={(e) => set('tipo', e.target.value as Funcionario['tipo'])}>

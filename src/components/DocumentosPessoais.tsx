@@ -4,6 +4,7 @@ import { itensPessoais, pendenciasPessoais, situacaoPessoal, type ItemPessoal } 
 import { salvar, useTabela } from '../lib/store'
 import type { DocumentoGuardado, Funcionario, TipoDocPessoal } from '../lib/types'
 import { EnviarArquivos } from './EnviarArquivos'
+import { BotaoFoto } from './FotoFuncionario'
 import { Botao, Cartao, Selo, cx } from './ui'
 
 /** Checklist dos documentos pessoais pedidos na admissão, com envio de foto/PDF de cada um */
@@ -98,7 +99,8 @@ export function DocumentosPessoais({ f }: { f: Funcionario }) {
                     Não se aplica
                   </label>
                 )}
-                {s !== 'nao_se_aplica' && (
+                {item.tipo === 'foto' && <BotaoFoto f={f} atual={arquivos[0]} />}
+                {s !== 'nao_se_aplica' && item.tipo !== 'foto' && (
                   <EnviarArquivos onArquivos={(a) => enviar(item, a)}>
                     {arquivos.length === 0 ? 'Enviar' : item.varios ? 'Adicionar' : 'Substituir'}
                   </EnviarArquivos>

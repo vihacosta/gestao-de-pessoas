@@ -20,6 +20,7 @@ import { remover, salvar, useTabela } from '../lib/store'
 import { salvarNoComputador } from '../lib/arquivos'
 import { ArquivoFuncionario } from '../components/ArquivoFuncionario'
 import { DocumentosPessoais } from '../components/DocumentosPessoais'
+import { FotoFuncionario } from '../components/FotoFuncionario'
 import { ConferenciaDados } from '../components/ConferenciaDados'
 import { HistoricoOcorrencias } from '../components/HistoricoOcorrencias'
 import { ErrosFuncionario } from '../components/ErrosFuncionario'
@@ -142,7 +143,10 @@ export default function FuncionarioDetalhe() {
         {/* Dados */}
         <Cartao className="p-5 lg:col-span-2">
           <h2 className="mb-4 font-semibold">Dados pessoais</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+          <FotoFuncionario f={f} />
+          <div className="grid flex-1 grid-cols-2 gap-4 sm:grid-cols-3">
+            <Info rotulo="Nº de cadastro (ponto)" valor={f.numeroCadastro} />
             <Info rotulo="CPF" valor={f.cpf} />
             <Info rotulo="RG" valor={f.rg} />
             <Info rotulo="PIS" valor={f.pis} />
@@ -173,6 +177,7 @@ export default function FuncionarioDetalhe() {
                 <Info rotulo="Observações" valor={f.observacoes} />
               </div>
             )}
+          </div>
           </div>
         </Cartao>
 
