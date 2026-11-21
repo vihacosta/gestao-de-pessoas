@@ -65,7 +65,7 @@ export async function listar<T extends { id: string }>(t: Tabela): Promise<T[]> 
   if (!supabase) return lerLocal<T>(t)
   const sb = supabase
   // Funcionários vêm por uma função do banco, que entrega só os campos permitidos para cada pessoa
-  const consulta = () => (t === 'funcionarios' ? sb.rpc('funcionarios_visiveis').select('data') : sb.from(t).select('data'))
+  const consulta = () => (t === 'funcionarios' ? sb.rpc('funcionarios_visiveis').select('id,data') : sb.from(t).select('data'))
   // o Supabase devolve no máximo 1000 linhas por consulta: busca em páginas
   const todas: T[] = []
   for (let de = 0; ; de += 1000) {
