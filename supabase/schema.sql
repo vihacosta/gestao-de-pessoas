@@ -70,7 +70,7 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['funcionarios', 'ferias', 'ausencias', 'config', 'modelos', 'pontos', 'documentos', 'justificativas', 'erros', 'aquisicoes'] loop
+  foreach t in array array['funcionarios', 'ferias', 'ausencias', 'config', 'modelos', 'pontos', 'documentos', 'justificativas', 'erros', 'aquisicoes', 'folha'] loop
     execute format('
       create table if not exists public.%I (
         id text primary key,
@@ -161,7 +161,8 @@ begin
     ('pontos', '''ponto'', ''ausencias'', ''holerites'', ''fechamento'', ''funcionarios''', '''ponto'''),
     ('justificativas', '''ponto'', ''fechamento'', ''funcionarios''', '''ponto'''),
     ('erros', '''valores''', '''valores'''),
-    ('aquisicoes', '''valores''', '''valores''')
+    ('aquisicoes', '''valores''', '''valores'''),
+    ('folha', '''valores''', '''valores''')
   ) as t(tabela, ler, alterar) loop
     foreach p in array array['ler', 'inserir', 'alterar', 'apagar'] loop
       execute format('drop policy if exists %I on public.%I', p, r.tabela);
@@ -217,10 +218,10 @@ create policy "admin total" on public.funcionarios for all to authenticated usin
 
 create or replace function public.filtrar_funcionario(d jsonb, valores boolean, cadastro boolean, cpf boolean) returns jsonb
 language sql immutable set search_path = public as $$
-  select case when valores then x else (x - array['beneficioCultura', 'pix', 'dadosBancarios']) || '{"salarios": []}'::jsonb end
+  select case when valores then x else (x - array['beneficioCultura', 'pix', 'dadosBancarios', 'passesDia', 'valorPasse']) || '{"salarios": []}'::jsonb end
   from (select case when cadastro then d else (
     select coalesce(jsonb_object_agg(k, v), '{}'::jsonb) from jsonb_each(d) as e(k, v)
-    where k in ('id', 'nome', 'cargo', 'tipo', 'dataAdmissao', 'dataDemissao', 'salarios', 'beneficioCultura', 'semFerias', 'semCartaoBeneficio', 'acertoFerias', 'numeroCadastro')
+    where k in ('id', 'nome', 'cargo', 'tipo', 'dataAdmissao', 'dataDemissao', 'salarios', 'beneficioCultura', 'passesDia', 'valorPasse', 'semFerias', 'semCartaoBeneficio', 'acertoFerias', 'numeroCadastro')
        or (cpf and k = 'cpf')
   ) || case when cpf then '{}'::jsonb else '{"cpf": ""}'::jsonb end end as x) y
 $$;
@@ -241,7 +242,7 @@ end $$;
 create or replace function public.salvar_funcionarios(registros jsonb) returns void
 language plpgsql security definer set search_path = public as $$
 declare
-  sensiveis text[] := array['salarios', 'beneficioCultura', 'pix', 'dadosBancarios'];
+  sensiveis text[] := array['salarios', 'beneficioCultura', 'pix', 'dadosBancarios', 'passesDia', 'valorPasse'];
   edita_valores boolean := public.pode_editar('valores');
   r jsonb;
   antigo jsonb;

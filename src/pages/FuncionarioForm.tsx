@@ -188,7 +188,17 @@ export default function FuncionarioForm() {
           {socio ? (
             <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">Sócios ficam fora de folha ponto, holerite, assinaturas, férias, bônus e cartão benefício.</p>
           ) : (
-          <Secao titulo="Cartão benefício">
+          <Secao titulo="Cartão benefício e vale transporte">
+            {editaValores && (
+              <>
+                <Campo rotulo="Passes por dia" dica="Vale transporte. Ex.: 2 (ida e volta). Vazio = não usa.">
+                  <Entrada type="number" min={0} step={1} value={f.passesDia ?? ''} onChange={(e) => set('passesDia', e.target.value === '' ? undefined : Number(e.target.value))} />
+                </Campo>
+                <Campo rotulo="Valor de cada passe (R$)" dica="A folha multiplica pelos dias úteis do mês.">
+                  <Entrada type="number" min={0} step={0.01} value={f.valorPasse ?? ''} onChange={(e) => set('valorPasse', e.target.value === '' ? undefined : Number(e.target.value))} />
+                </Campo>
+              </>
+            )}
             {editaValores && (
               <Campo rotulo="Cultura (R$ por mês)" dica="Valor fixo de Cultura no cartão benefício. Vazio = não recebe.">
                 <Entrada

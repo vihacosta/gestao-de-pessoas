@@ -47,6 +47,10 @@ export interface Funcionario {
   salarios: Salario[]
   /** Valor fixo mensal de Cultura no cartão benefício (só algumas pessoas) */
   beneficioCultura?: number
+  /** Vale transporte: quantos passes a pessoa usa por dia */
+  passesDia?: number
+  /** Vale transporte: valor de cada passe */
+  valorPasse?: number
   /** Não entra na planilha do cartão benefício (ex.: sócias) */
   semCartaoBeneficio?: boolean
   /** Não entra no controle de férias (ex.: sócios) */

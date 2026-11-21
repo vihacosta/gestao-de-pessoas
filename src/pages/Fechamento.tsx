@@ -2,6 +2,8 @@ import { addMonths, format } from 'date-fns'
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../auth'
+import { FolhaMes } from '../components/FolhaMes'
 import { Botao, Cabecalho, Cartao, Selo, Vazio } from '../components/ui'
 import { baixarArquivo, salvarNoComputador } from '../lib/arquivos'
 import { d } from '../lib/clt'
@@ -35,6 +37,8 @@ export default function Fechamento() {
   const { rows: pontos } = useTabela<CartaoPontoSalvo>('pontos')
   const { rows: justificativas } = useTabela<Justificativa>('justificativas')
   const tolerancia = useConfig().toleranciaJustificativa ?? 0
+  const verValores = useAuth().pode('valores')
+  const ativos = useMemo(() => ativosNoMes(funcionarios, mes), [funcionarios, mes])
 
   const [progresso, setProgresso] = useState<{ feitos: number; total: number } | null>(null)
   const [falhas, setFalhas] = useState<ItemPacote[]>([])
@@ -42,8 +46,8 @@ export default function Fechamento() {
   const [erro, setErro] = useState('')
 
   const f = useMemo(
-    () => montarFechamento({ mes, ativos: ativosNoMes(funcionarios, mes), funcionarios, documentos, ausencias, pontos, justificativas, tolerancia, nomesTipo }),
-    [mes, funcionarios, documentos, ausencias, pontos, justificativas, tolerancia],
+    () => montarFechamento({ mes, ativos, funcionarios, documentos, ausencias, pontos, justificativas, tolerancia, nomesTipo }),
+    [mes, ativos, funcionarios, documentos, ausencias, pontos, justificativas, tolerancia],
   )
   const total = f.linhas.length
   const contagem: Record<GrupoPendencia, string> = {
@@ -72,7 +76,7 @@ export default function Fechamento() {
 
   return (
     <>
-      <Cabecalho titulo="Fechamento mensal" subtitulo="Confira os documentos do mês e baixe o pacote para enviar à contabilidade" />
+      <Cabecalho titulo="Fechamento mensal" subtitulo="Confira os documentos e a folha do mês e baixe o pacote para enviar à contabilidade" />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
@@ -147,6 +151,8 @@ export default function Fechamento() {
           })}
         </div>
       )}
+
+      {verValores && !carregando && <FolhaMes mes={mes} tituloMes={nomeMes(mes)} ativos={ativos} />}
 
       <p className="mt-3 text-xs text-gray-500">
         O pacote traz uma pasta para cada tipo de documento e uma planilha de resumo, sem salários. Você pode baixar mesmo com pendências. O envio à contabilidade é feito por você.

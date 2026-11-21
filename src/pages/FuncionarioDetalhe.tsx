@@ -187,6 +187,7 @@ export default function FuncionarioDetalhe() {
             <Info rotulo="Contato de emergência" valor={[f.contatoEmergencia1, f.contatoEmergencia2].filter(Boolean).join(' · ')} />
             {pode('valores') && <Info rotulo="Pix" valor={f.pix} />}
             {pode('valores') && <Info rotulo="Banco" valor={f.dadosBancarios} />}
+            {pode('valores') && !socio && <Info rotulo="Vale transporte" valor={f.passesDia ? `${f.passesDia} ${f.passesDia === 1 ? 'passe' : 'passes'} por dia de ${brl(f.valorPasse ?? 0)}` : undefined} />}
             {f.dependentes && (
               <div className="col-span-2 sm:col-span-3">
                 <Info rotulo="Dependentes" valor={f.dependentes} />

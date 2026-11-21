@@ -9,7 +9,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { useCallback, useEffect, useState } from 'react'
 import { dadosDemo } from './demo'
 
-export type Tabela = 'funcionarios' | 'ferias' | 'ausencias' | 'config' | 'modelos' | 'pontos' | 'documentos' | 'justificativas' | 'erros' | 'aquisicoes'
+export type Tabela = 'funcionarios' | 'ferias' | 'ausencias' | 'config' | 'modelos' | 'pontos' | 'documentos' | 'justificativas' | 'erros' | 'aquisicoes' | 'folha'
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined

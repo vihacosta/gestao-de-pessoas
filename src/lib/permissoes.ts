@@ -18,7 +18,7 @@ export const MODULOS: { id: Modulo; rotulo: string; descricao: string }[] = [
   { id: 'ausencias', rotulo: 'Lançamentos e bônus', descricao: 'Lançar faltas, atestados e licenças, bônus e cartão benefício' },
   { id: 'fechamento', rotulo: 'Fechamento mensal', descricao: 'Pacote do mês, inclusive holerites e atestados' },
   { id: 'configuracoes', rotulo: 'Configurações', descricao: 'Valores e regras da empresa' },
-  { id: 'valores', rotulo: 'Salários e valores', descricao: 'Salários, banco e Pix, descontos e estimativa de rescisão' },
+  { id: 'valores', rotulo: 'Salários e valores', descricao: 'Salários, banco e Pix, descontos, folha de pagamento e estimativa de rescisão' },
 ]
 
 export function nivelDe(p: Permissoes | null | undefined, admin: boolean, m: Modulo): NivelPermissao | null {
@@ -73,6 +73,7 @@ const MODULO_DA_TABELA: Record<string, Modulo> = {
   justificativas: 'ponto',
   erros: 'valores',
   aquisicoes: 'valores',
+  folha: 'valores',
 }
 
 /** Confere antes de gravar, para mostrar um aviso claro em vez de um erro do banco */
